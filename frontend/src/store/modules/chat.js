@@ -1,5 +1,5 @@
-import xfyunService from '@/services/xfyun';
-import weatherService from '@/services/weather';
+import xfyun from '@/services/xfyun';
+import weather from '@/services/weather';
 
 const state = {
   messages: [],
@@ -55,7 +55,7 @@ const actions = {
 
     try {
       // 分析情绪
-      const emotion = await xfyunService.analyzeEmotion(text);
+      const emotion = await xfyun.analyzeEmotion(text);
       commit('SET_EMOTION', emotion);
 
       // 检查是否是天气相关问题
@@ -67,12 +67,12 @@ const actions = {
 
       if (isWeatherQuestion) {
         // 获取天气信息
-        weatherInfo = await weatherService.getNowWeather();
-        const weatherDescription = weatherService.generateWeatherDescription(weatherInfo);
+        weatherInfo = await weather.getNowWeather();
+        const weatherDescription = weather.generateWeatherDescription(weatherInfo);
         response = weatherDescription;
       } else {
         // 使用讯飞服务获取回复
-        response = await xfyunService.chat([
+        response = await xfyun.chat([
           { role: 'system', content: '你是一个可爱的AI助手糖球，性格活泼开朗，说话方式可爱温暖。你会用emoji表情，会关心用户的情绪状态。' },
           { role: 'user', content: text }
         ]);

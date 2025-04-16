@@ -24,7 +24,7 @@
 
     <!-- 聊天内容区 -->
     <div class="chat-messages" ref="messageContainer">
-      <div v-for="(message, index) in messages" 
+      <div v-for="(message, index) in messagesArray" 
            :key="index" 
            class="message-wrapper"
            :class="message.type">
@@ -52,8 +52,8 @@
             
             <!-- 动作按钮 -->
             <div v-if="message.actions" class="message-actions">
-              <button v-for="(action, index) in message.actions"
-                      :key="index"
+              <button v-for="(action, actionIndex) in message.actions"
+                      :key="actionIndex"
                       class="action-btn"
                       @click="handleAction(action)">
                 {{ getActionLabel(action) }}
@@ -106,23 +106,28 @@ export default {
     const inputArea = ref(null);
     
     // Vuex 状态
-    const messages = computed(() => store.getters['chat/messages']);
-    const isTyping = computed(() => store.getters['chat/isTyping']);
-    const currentEmotion = computed(() => store.getters['chat/currentEmotion']);
+    const messages = computed(() => store.getters['chat/getAllMessages'] || []);
+    const messagesArray = computed(() => {
+      return Array.isArray(messages.value) ? messages.value : [];
+    });
+    const isTyping = computed(() => store.getters['chat/getIsTyping'] || false);
+    const currentEmotion = computed(() => store.getters['chat/getCurrentEmotion'] || 'neutral');
 
     // 发送欢迎消息
     onMounted(() => {
-      console.log('[ChatView] 组件挂载，当前消息列表:', messages.value);
-      // 仅当没有消息时添加欢迎消息
-      if (messages.value.length === 0) {
-        console.log('[ChatView] 发送欢迎消息');
-        store.commit('chat/addMessage', {
-          text: '你好呀！我是糖球助手，有什么可以帮到你的吗？可以问我天气哦~ 😊',
-          type: 'assistant',
-          timestamp: new Date()
-        });
-      }
-      scrollToBottom();
+      console.log('[ChatView] 组件挂载');
+      store.dispatch('chat/clearChat');
+      
+      // 添加欢迎消息
+      store.commit('chat/ADD_MESSAGE', {
+        text: '你好呀！我是糖球助手，有什么可以帮到你的吗？可以问我天气哦~ 😊',
+        type: 'assistant',
+        timestamp: new Date()
+      });
+      
+      nextTick(() => {
+        scrollToBottom();
+      });
     });
     
     // 发送消息方法
@@ -133,18 +138,8 @@ export default {
       if (!text || isTyping.value) return;
       
       try {
-        // 添加用户消息
-        store.commit('chat/addMessage', {
-          text,
-          type: 'user',
-          timestamp: new Date()
-        });
-        
-        // 处理消息并生成回复
-        store.dispatch('chat/sendMessage', {
-          text,
-          type: 'user'
-        });
+        // 发送消息
+        store.dispatch('chat/sendMessage', text);
         
         // 清空输入框
         inputText.value = '';
@@ -211,8 +206,8 @@ export default {
       emojiPickerVisible.value = false;
     };
     
-    // 监听消息变化
-    watch(() => messages.value.length, () => {
+    // 监听消息变化，这里使用可选链以避免messagesArray为undefined的情况
+    watch(() => messagesArray.value?.length, () => {
       scrollToBottom();
     });
 
@@ -223,6 +218,7 @@ export default {
       assistantAvatar,
       inputArea,
       messages,
+      messagesArray,
       isTyping,
       currentEmotion,
       sendMessage,
