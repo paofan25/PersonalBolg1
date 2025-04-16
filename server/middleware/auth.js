@@ -1,42 +1,34 @@
 const jwt = require('jsonwebtoken');
+const config = require('../config');
 const User = require('../models/User');
+const { verifyToken } = require('../config/jwt');
 
 // 保护路由
-exports.protect = async (req, res, next) => {
-  let token;
+const authMiddleware = (req, res, next) => {
+  // 从header中获取token
+  let token = req.header('Authorization');
 
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer')
-  ) {
-    // 从 Bearer token 中提取 token
-    token = req.headers.authorization.split(' ')[1];
-  } else if (req.cookies && req.cookies.token) {
-    // 从 cookie 中提取 token
-    token = req.cookies.token;
+  // 如果使用Bearer token，需要提取token部分
+  if (token && token.startsWith('Bearer ')) {
+    token = token.split(' ')[1];
   }
 
-  // 确保 token 存在
+  // 检查是否有token
   if (!token) {
-    return res.status(401).json({
-      success: false,
-      message: '未授权，请登录'
-    });
+    return res.status(401).json({ msg: '无token，认证失败' });
   }
 
   try {
-    // 验证 token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // 验证token
+    const decoded = jwt.verify(token, config.jwtSecret);
+    console.log('token验证成功:', decoded);
 
-    // 将用户添加到请求对象
-    req.user = await User.findById(decoded.id);
-
+    // 将用户信息添加到req对象
+    req.user = decoded.user;
     next();
   } catch (err) {
-    return res.status(401).json({
-      success: false,
-      message: '未授权，请登录'
-    });
+    console.error('token验证失败:', err);
+    res.status(401).json({ msg: 'token无效' });
   }
 };
 
@@ -59,3 +51,5 @@ exports.authorize = (...roles) => {
     next();
   };
 };
+
+module.exports = authMiddleware;

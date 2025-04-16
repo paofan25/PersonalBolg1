@@ -1,55 +1,76 @@
+require('dotenv').config();
 const express = require('express');
-const dotenv = require('dotenv');
+const mongoose = require('mongoose');
 const cors = require('cors');
-const connectDB = require('./config/db');
-const errorHandler = require('./middleware/error');
+const bodyParser = require('body-parser');
 
-// 加载环境变量
-dotenv.config();
+// 导入路由
+const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/users');
+const blogRoutes = require('./routes/blog');
+const worksRoutes = require('./routes/works');
+// TODO: 待实现的路由
+// const messageRoutes = require('./routes/message');
+// const scoreRoutes = require('./routes/score');
+
+const app = express();
+const port = process.env.PORT || 5000;
 
 // 连接数据库
-connectDB();
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+  .then(() => console.log('MongoDB连接成功'))
+  .catch(err => {
+    console.error('MongoDB连接失败:', err);
+    process.exit(1);
+  });
 
-// 初始化Express
-const app = express();
+// 中间件配置
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:8080',
+  credentials: true
+}));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-// 中间件
-app.use(express.json());
-app.use(cors());
+// API前缀
+const apiPrefix = '/api';
 
-// 根路由 - 添加一个简单的欢迎消息
-app.get('/', (req, res) => {
+// 路由
+app.use(`${apiPrefix}/auth`, authRoutes);
+app.use(`${apiPrefix}/users`, userRoutes);
+app.use(`${apiPrefix}/blog`, blogRoutes);
+app.use(`${apiPrefix}/works`, worksRoutes);
+// TODO: 待实现的路由
+// app.use(`${apiPrefix}/message`, messageRoutes);
+// app.use(`${apiPrefix}/score`, scoreRoutes);
+
+// 测试路由
+app.get(`${apiPrefix}/test`, (req, res) => {
   res.json({
-    success: true,
-    message: '欢迎使用个人博客API',
-    endpoints: {
-      auth: '/api/auth',
-      posts: '/api/posts'
+    code: 200,
+    message: '服务器运行正常',
+    data: {
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV
     }
   });
 });
 
-// API路由
-app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/posts', require('./routes/postRoutes'));
-
-// 处理静态资源
-app.use('/uploads', express.static('uploads'));
-
 // 错误处理中间件
-app.use(errorHandler);
-
-// 设置端口
-const PORT = process.env.PORT || 5000;
-
-// 启动服务器
-const server = app.listen(PORT, () => {
-  console.log(`服务器运行在端口 ${PORT}`);
+app.use((err, req, res, next) => {
+  console.error('[错误]:', err);
+  res.status(err.status || 500).json({
+    code: err.status || 500,
+    message: err.message || '服务器内部错误',
+    data: null
+  });
 });
 
-// 处理未捕获的异常
-process.on('unhandledRejection', (err, promise) => {
-  console.error(`错误: ${err.message}`);
-  // 关闭服务器并退出进程
-  server.close(() => process.exit(1));
+// 启动服务器
+app.listen(port, () => {
+  console.log(`[服务器] 已启动于: http://localhost:${port}`);
+  console.log(`[API] 基础路径: ${apiPrefix}`);
 });

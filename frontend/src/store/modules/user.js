@@ -28,12 +28,16 @@ const actions = {
   login({ commit }, userInfo) {
     const { username, password } = userInfo
     return new Promise((resolve, reject) => {
-      login({ username: username.trim(), password: password })
+      login({ email: username.trim(), password: password })
         .then(response => {
-          const { data } = response
-          commit('SET_TOKEN', data.token)
-          setToken(data.token)
-          resolve()
+          const { data } = response.data
+          if (data && data.token) {
+            commit('SET_TOKEN', data.token)
+            setToken(data.token)
+            resolve(data)
+          } else {
+            reject(new Error('登录失败：未获取到token'))
+          }
         })
         .catch(error => {
           reject(error)

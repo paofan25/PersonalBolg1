@@ -12,13 +12,13 @@
         label-position="top"
         @submit.prevent="handleLogin"
       >
-        <el-form-item label="用户名" prop="username">
+        <el-form-item label="邮箱" prop="email">
           <el-input 
-            v-model="loginForm.username"
-            placeholder="请输入用户名"
+            v-model="loginForm.email"
+            placeholder="请输入邮箱"
           >
             <template #prefix>
-              <el-icon><User /></el-icon>
+              <el-icon><Message /></el-icon>
             </template>
           </el-input>
         </el-form-item>
@@ -26,7 +26,7 @@
         <el-form-item label="密码" prop="password">
           <el-input 
             v-model="loginForm.password"
-            type="password"
+            type="password" 
             placeholder="请输入密码"
             show-password
           >
@@ -37,14 +37,10 @@
         </el-form-item>
         
         <el-form-item>
-          <el-checkbox v-model="loginForm.remember">记住我</el-checkbox>
-        </el-form-item>
-        
-        <el-form-item>
           <el-button 
             type="primary" 
             native-type="submit"
-            :loading="loading"
+            :loading="isLoading"
             class="login-button"
           >
             登录
@@ -61,36 +57,33 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useStore } from 'vuex'
 import { useRouter } from 'vue-router'
-import { User, Lock } from '@element-plus/icons-vue'
+import { Message, Lock } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 export default {
   name: 'LoginView',
   components: {
-    User,
+    Message,
     Lock
   },
   setup() {
     const store = useStore()
     const router = useRouter()
     const formRef = ref(null)
+    const isLoading = ref(false)
     
     const loginForm = ref({
-      username: '',
-      password: '',
-      remember: false
+      email: '',
+      password: ''
     })
     
-    const loading = computed(() => store.state.auth.loading)
-    const error = computed(() => store.state.auth.error)
-    
     const rules = {
-      username: [
-        { required: true, message: '请输入用户名', trigger: 'blur' },
-        { min: 3, message: '用户名至少3个字符', trigger: 'blur' }
+      email: [
+        { required: true, message: '请输入邮箱', trigger: 'blur' },
+        { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
       ],
       password: [
         { required: true, message: '请输入密码', trigger: 'blur' },
@@ -101,22 +94,44 @@ export default {
     const handleLogin = async () => {
       if (!formRef.value) return
       
-      try {
-        await formRef.value.validate()
-        await store.dispatch('auth/login', loginForm.value)
-        ElMessage.success('登录成功')
-        router.push('/')
-      } catch (error) {
-        console.error('登录失败:', error)
-        ElMessage.error(error.message || '登录失败，请重试')
-      }
+      await formRef.value.validate(async (valid) => {
+        if (valid) {
+          try {
+            isLoading.value = true
+            const result = await store.dispatch('auth/login', loginForm.value)
+            ElMessage({
+              type: 'success',
+              message: '登录成功！'
+            })
+
+            if (result && result.redirectTo) {
+              router.push(result.redirectTo)
+            } else {
+              router.push('/')
+            }
+            
+            if (result && result.infoError) {
+              ElMessage({
+                type: 'warning',
+                message: `用户信息获取不完整: ${result.infoError}，部分功能可能受限`
+              })
+            }
+          } catch (error) {
+            ElMessage({
+              type: 'error',
+              message: error.message || '登录失败，请重试'
+            })
+          } finally {
+            isLoading.value = false
+          }
+        }
+      })
     }
     
     return {
       formRef,
       loginForm,
-      loading,
-      error,
+      isLoading,
       rules,
       handleLogin
     }

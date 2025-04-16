@@ -182,17 +182,25 @@ export default {
 
       isLoading.value = true
       try {
-        await store.dispatch('auth/register', {
+        const result = await store.dispatch('auth/register', {
           username: username.value,
           email: email.value,
           password: password.value
         })
-        router.push('/login')
+        
+        if (result && result.redirectTo) {
+          console.log('注册成功，重定向到:', result.redirectTo)
+          router.push(result.redirectTo)
+        } else {
+          console.log('注册成功，但没有重定向信息')
+          router.push('/profile')
+        }
       } catch (error) {
+        console.error('注册出错:', error)
         if (error.response?.data?.message) {
           errors.email = error.response.data.message
         } else {
-          errors.email = '注册失败，请稍后重试'
+          errors.email = error.message || '注册失败，请稍后重试'
         }
       } finally {
         isLoading.value = false

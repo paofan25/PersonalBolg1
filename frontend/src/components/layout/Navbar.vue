@@ -25,9 +25,14 @@
       </div>
       
       <!-- 登录/注册按钮 -->
-      <div class="auth-buttons">
+      <div class="auth-buttons" v-if="!isLoggedIn">
         <button class="btn login-btn" @click="navigateTo('/login')">登录</button>
         <button class="btn btn-primary register-btn" @click="navigateTo('/register')">注册</button>
+      </div>
+      
+      <!-- 用户头像下拉菜单 -->
+      <div v-else>
+        <UserDropdown />
       </div>
       
       <!-- 移动端菜单按钮 -->
@@ -48,73 +53,136 @@
           <span class="link-text">{{ link.text }}</span>
         </router-link>
       </div>
-      <div class="mobile-auth-buttons">
+      
+      <!-- 移动端认证按钮 -->
+      <div class="mobile-auth-buttons" v-if="!isLoggedIn">
         <button class="btn login-btn" @click="navigateToMobile('/login')">登录</button>
         <button class="btn btn-primary register-btn" @click="navigateToMobile('/register')">注册</button>
+      </div>
+      
+      <!-- 移动端用户信息 -->
+      <div class="mobile-user-info" v-else>
+        <div class="mobile-user-avatar" @click="navigateToMobile('/profile')">
+          <UserDropdown :showUsername="false" />
+        </div>
+        <div class="mobile-user-actions">
+          <button class="mobile-action-btn" @click="navigateToMobile('/profile')">
+            <span class="action-icon">👤</span>
+            <span>个人中心</span>
+          </button>
+          <button class="mobile-action-btn" @click="handleLogout">
+            <span class="action-icon">🚪</span>
+            <span>退出登录</span>
+          </button>
+        </div>
       </div>
     </div>
   </nav>
 </template>
 
 <script>
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
+import { useStore } from 'vuex';
+import { useRouter } from 'vue-router';
+import UserDropdown from '@/components/UserDropdown.vue';
+
 export default {
   name: 'NavigationBar',
-  data() {
-    return {
-      navLinks: [
-        { text: '首页', path: '/', icon: '🏠' },
-        { text: '博客', path: '/blog', icon: '📝' },
-        { text: '聊天助手', path: '/chat', icon: '🍡' },
-        { text: '小游戏', path: '/games', icon: '🎮' },
-        { text: '关于', path: '/about', icon: '✨' }
-      ],
-      activeLink: '/',
-      mobileMenuOpen: false
-    };
+  components: {
+    UserDropdown
   },
-  mounted() {
-    // 根据当前路由设置活动链接
-    this.activeLink = this.$route.path;
+  setup() {
+    const store = useStore();
+    const router = useRouter();
     
-    // 监听路由变化
-    this.$router.afterEach((to) => {
-      this.activeLink = to.path;
+    // 状态
+    const navLinks = ref([
+      { text: '首页', path: '/', icon: '🏠' },
+      { text: '博客', path: '/blog', icon: '📝' },
+      { text: '聊天助手', path: '/chat', icon: '🍡' },
+      { text: '小游戏', path: '/games', icon: '🎮' },
+      { text: '关于', path: '/about', icon: '✨' }
+    ]);
+    const activeLink = ref('/');
+    const mobileMenuOpen = ref(false);
+    
+    // 计算属性
+    const isLoggedIn = computed(() => store.getters['auth/isLoggedIn']);
+    
+    // 方法
+    const setActiveLink = (path) => {
+      activeLink.value = path;
+    };
+    
+    const navigateTo = (path) => {
+      router.push(path);
+    };
+    
+    const navigateToMobile = (path) => {
+      router.push(path);
+      closeMobileMenu();
+    };
+    
+    const toggleMobileMenu = () => {
+      mobileMenuOpen.value = !mobileMenuOpen.value;
+      // 当菜单打开时阻止body滚动
+      document.body.style.overflow = mobileMenuOpen.value ? 'hidden' : '';
+    };
+    
+    const closeMobileMenu = () => {
+      mobileMenuOpen.value = false;
+      document.body.style.overflow = '';
+    };
+    
+    const handleResize = () => {
+      // 如果窗口宽度大于768px，关闭移动菜单
+      if (window.innerWidth > 768 && mobileMenuOpen.value) {
+        closeMobileMenu();
+      }
+    };
+    
+    const handleLogout = async () => {
+      try {
+        await store.dispatch('auth/logout');
+        router.push('/login');
+        closeMobileMenu();
+      } catch (error) {
+        console.error('退出登录失败:', error);
+      }
+    };
+    
+    // 生命周期钩子
+    onMounted(() => {
+      // 根据当前路由设置活动链接
+      activeLink.value = router.currentRoute.value.path;
+      
+      // 监听路由变化
+      router.afterEach((to) => {
+        activeLink.value = to.path;
+      });
+      
+      // 添加窗口大小变化事件监听
+      window.addEventListener('resize', handleResize);
+      handleResize();
     });
     
-    // 添加窗口大小变化事件监听
-    window.addEventListener('resize', this.handleResize);
-    this.handleResize();
-  },
-  beforeUnmount() {
-    // 移除事件监听器
-    window.removeEventListener('resize', this.handleResize);
-  },
-  methods: {
-    setActiveLink(path) {
-      this.activeLink = path;
-    },
-    navigateTo(path) {
-      this.$router.push(path);
-    },
-    navigateToMobile(path) {
-      this.navigateTo(path);
-      this.closeMobileMenu();
-    },
-    toggleMobileMenu() {
-      this.mobileMenuOpen = !this.mobileMenuOpen;
-      // 当菜单打开时阻止body滚动
-      document.body.style.overflow = this.mobileMenuOpen ? 'hidden' : '';
-    },
-    closeMobileMenu() {
-      this.mobileMenuOpen = false;
-      document.body.style.overflow = '';
-    },
-    handleResize() {
-      // 如果窗口宽度大于768px，关闭移动菜单
-      if (window.innerWidth > 768 && this.mobileMenuOpen) {
-        this.closeMobileMenu();
-      }
-    }
+    onBeforeUnmount(() => {
+      // 移除事件监听器
+      window.removeEventListener('resize', handleResize);
+    });
+    
+    return {
+      navLinks,
+      activeLink,
+      mobileMenuOpen,
+      isLoggedIn,
+      setActiveLink,
+      navigateTo,
+      navigateToMobile,
+      toggleMobileMenu,
+      closeMobileMenu,
+      handleLogout
+    };
   }
 };
 </script>
@@ -340,5 +408,61 @@ export default {
 
 .pulse-animation {
   animation: pulse 2s ease-in-out infinite;
+}
+
+/* 移动端用户信息 */
+.mobile-user-info {
+  padding: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mobile-user-avatar {
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: center;
+}
+
+.mobile-user-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mobile-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  color: #000;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.mobile-action-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.action-icon {
+  font-size: 18px;
+}
+
+/* 用户下拉菜单 */
+:deep(.el-dropdown-menu) {
+  padding: 8px 0;
+}
+
+:deep(.el-avatar) {
+  border: 2px solid #FFB6C1;
+  box-shadow: 0 0 10px rgba(255, 182, 193, 0.5);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+:deep(.el-avatar:hover) {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(255, 182, 193, 0.7);
 }
 </style>

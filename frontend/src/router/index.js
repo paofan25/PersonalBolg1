@@ -7,6 +7,7 @@ import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import GamesView from '../views/GamesView.vue'
 import MemoryGame from '../views/games/MemoryGame.vue'
+import store from '@/store'
 
 const routes = [
   {
@@ -55,6 +56,15 @@ const routes = [
     component: RegisterView
   },
   {
+    path: '/profile',
+    name: 'UserProfile',
+    component: () => import('@/views/UserProfile.vue'),
+    meta: {
+      requiresAuth: true,
+      title: '个人中心 - 甜梦星球'
+    }
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: NotFoundView
@@ -63,7 +73,35 @@ const routes = [
 
 const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
-  routes
+  routes,
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition
+    } else {
+      return { top: 0 }
+    }
+  }
+})
+
+// 全局前置守卫
+router.beforeEach((to, from, next) => {
+  // 设置页面标题
+  document.title = to.meta.title || '甜梦星球'
+
+  // 检查是否需要登录
+  if (to.matched.some(record => record.meta.requiresAuth)) {
+    // 如果路由需要登录但用户未登录，重定向到登录页面
+    if (!store.getters['auth/isLoggedIn']) {
+      next({
+        path: '/login',
+        query: { redirect: to.fullPath }
+      })
+    } else {
+      next()
+    }
+  } else {
+    next()
+  }
 })
 
 export default router

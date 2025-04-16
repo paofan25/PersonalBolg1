@@ -3,48 +3,50 @@ const mongoose = require('mongoose');
 const WorkSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: [true, '请提供作品标题'],
+    required: [true, '请输入作品标题'],
     trim: true,
     maxlength: [100, '标题不能超过100个字符']
   },
   description: {
     type: String,
-    required: [true, '请提供作品描述'],
-    trim: true
+    required: [true, '请输入作品描述']
   },
-  coverImage: {
+  cover: {
     type: String,
-    default: 'default-work.jpg'
+    required: [true, '请上传作品封面']
   },
-  content: {
-    type: String,
-    default: ''
-  },
-  category: {
-    type: String,
-    required: [true, '请提供作品分类'],
-    enum: ['网站', '游戏', '设计', '其他']
-  },
-  tags: {
-    type: [String],
-    default: []
-  },
+  images: [{
+    type: String
+  }],
   link: {
     type: String,
-    default: ''
+    required: [true, '请输入作品链接']
+  },
+  github: {
+    type: String
+  },
+  technologies: [{
+    type: String,
+    trim: true
+  }],
+  category: {
+    type: String,
+    required: [true, '请选择作品分类'],
+    enum: ['Web', 'Mobile', 'Desktop', 'Other']
   },
   author: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-  likes: {
-    type: Number,
-    default: 0
+  featured: {
+    type: Boolean,
+    default: false
   },
-  views: {
-    type: Number,
-    default: 0
+  status: {
+    type: String,
+    enum: ['draft', 'published'],
+    default: 'published'
   },
   createdAt: {
     type: Date,
@@ -54,6 +56,8 @@ const WorkSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
+}, {
+  timestamps: true
 });
 
 module.exports = mongoose.model('Work', WorkSchema);
