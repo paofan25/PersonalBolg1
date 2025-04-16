@@ -7,6 +7,7 @@ import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import GamesView from '../views/GamesView.vue'
 import MemoryGame from '../views/games/MemoryGame.vue'
+import ChatView from '../views/ChatView.vue'
 
 const routes = [
   {
@@ -27,7 +28,7 @@ const routes = [
   {
     path: '/chat',
     name: 'chat',
-    component: () => import('../views/ChatAssistant.vue')
+    component: ChatView
   },
   {
     path: '/games',

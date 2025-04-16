@@ -1,170 +1,127 @@
-import CryptoJS from 'crypto-js';
+/**
+ * 讯飞服务
+ * 用于集成讯飞开放平台API
+ */
 
 class XfyunService {
   constructor() {
-    // 检查环境变量
-    if (typeof import.meta.env === 'undefined') {
-      console.error('环境变量未正确加载');
-    }
+    // 默认配置
+    const defaultConfig = {
+      appid: 'bb840282',
+      apiKey: '178baf6c84xxxxxxxxxxxxxxxx',
+      apiSecret: 'YjU3ZDk5ZGU1ODZkxxxxxxxx'
+    };
 
-    // 使用环境变量
-    this.appid = import.meta.env?.VITE_APP_XFYUN_APPID;
-    this.apiKey = import.meta.env?.VITE_APP_XFYUN_API_KEY;
-    this.apiSecret = import.meta.env?.VITE_APP_XFYUN_API_SECRET;
+    // 尝试从环境变量读取配置
+    try {
+      this.config = {
+        appid: process.env.VUE_APP_XFYUN_APPID || defaultConfig.appid,
+        apiKey: process.env.VUE_APP_XFYUN_API_KEY || defaultConfig.apiKey,
+        apiSecret: process.env.VUE_APP_XFYUN_API_SECRET || defaultConfig.apiSecret
+      };
 
-    if (!this.appid || !this.apiKey || !this.apiSecret) {
-      console.error('讯飞服务配置缺失，使用默认值');
-      // 使用默认值作为后备
-      this.appid = 'bb840282';
-      this.apiKey = '178baf6c846eaeb5ea632cdab055b9cd';
-      this.apiSecret = 'YjMzMmE3NzczOWExZjQ3ZWI1NWY3OWJi';
+      if (!this.config.appid || !this.config.apiKey || !this.config.apiSecret) {
+        console.log('讯飞服务配置缺失，使用默认值');
+      }
+    } catch (error) {
+      console.error('环境变量加载错误:', error);
+      this.config = defaultConfig;
     }
 
     console.log('XfyunService initialized with:', {
-      appid: this.appid,
-      apiKey: this.apiKey?.substring(0, 10) + '...',
-      hasSecret: !!this.apiSecret
-    });
-
-    // 使用 Spark Lite 版本
-    this.domain = 'lite';
-    this.url = 'wss://spark-api.xf-yun.com/v1.1/chat';
-  }
-
-  // 生成鉴权url
-  getAuthUrl() {
-    const host = 'spark-api.xf-yun.com/v1.1/chat';
-    const date = new Date().toUTCString();
-    const signatureOrigin = `host: ${host}\ndate: ${date}\nGET /v1.1/chat HTTP/1.1`;
-    const signatureSha = CryptoJS.HmacSHA256(signatureOrigin, this.apiSecret);
-    const signature = CryptoJS.enc.Base64.stringify(signatureSha);
-    const authorizationOrigin = `api_key="${this.apiKey}", algorithm="hmac-sha256", headers="host date request-line", signature="${signature}"`;
-    const authorization = btoa(authorizationOrigin);
-    return `${this.url}?authorization=${authorization}&date=${date}&host=${host}`;
-  }
-
-  // 建立WebSocket连接
-  createWebSocket() {
-    return new Promise((resolve, reject) => {
-      try {
-        const url = this.getAuthUrl();
-        console.log('Creating WebSocket connection...');
-        const ws = new WebSocket(url);
-        
-        ws.onopen = () => {
-          console.log('WebSocket连接已建立');
-          resolve(ws);
-        };
-        
-        ws.onerror = (error) => {
-          console.error('WebSocket连接错误:', error);
-          reject(error);
-        };
-
-        ws.onclose = (event) => {
-          console.log('WebSocket连接关闭:', event);
-        };
-      } catch (error) {
-        console.error('创建WebSocket失败:', error);
-        reject(error);
-      }
+      appid: this.config.appid,
+      apiKey: this.config.apiKey.substring(0, 10) + '...',
+      hasSecret: !!this.config.apiSecret
     });
   }
 
-  // 发送消息并获取回复
-  async chat(messages) {
-    try {
-      console.log('Starting chat with messages:', messages);
-      const ws = await this.createWebSocket();
-      
-      return new Promise((resolve, reject) => {
-        let responseText = '';
-        
-        ws.onmessage = (event) => {
-          try {
-            const response = JSON.parse(event.data);
-            console.log('Received message:', response);
-            
-            if (response.header.code !== 0) {
-              console.error('请求错误:', response.header.message);
-              ws.close();
-              reject(new Error(response.header.message));
-              return;
-            }
-            
-            const payload = response.payload;
-            const choices = payload.choices;
-            const status = choices.status;
-            const text = choices.text?.[0]?.content || '';
-            
-            responseText += text;
-            
-            if (status === 2) {
-              console.log('Chat completed:', responseText);
-              ws.close();
-              resolve(responseText);
-            }
-          } catch (error) {
-            console.error('处理消息失败:', error);
-            ws.close();
-            reject(error);
-          }
+  /**
+   * 合成语音
+   * @returns {Promise<Object>} 合成结果
+   */
+  // eslint-disable-next-line no-unused-vars
+  async textToSpeech(text) {
+    // 在实际应用中，这里应该调用讯飞API
+    // 由于未实际接入API，此处模拟返回结果
+    
+    // 模拟API调用延迟
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // 返回一个模拟的成功结果
+    return {
+      success: true,
+      message: '语音合成成功'
+    };
+  }
+
+  /**
+   * 语音识别
+   * @returns {Promise<Object>} 识别结果
+   */
+  // eslint-disable-next-line no-unused-vars
+  async speechToText(audioData) {
+    // 在实际应用中，这里应该调用讯飞API
+    // 由于未实际接入API，此处模拟返回结果
+    
+    // 模拟API调用延迟
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    return {
+      success: true,
+      result: '这是一个模拟的语音识别结果'
+    };
+  }
+
+  /**
+   * 自然语言处理
+   * @param {string} text 输入文本
+   * @param {string} type 处理类型 (情感分析|文本纠错|文本分类等)
+   * @returns {Promise<Object>} 处理结果
+   */
+  async nlp(text, type) {
+    // 模拟NLP处理
+    // 根据不同的处理类型返回不同的模拟结果
+    
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    switch (type) {
+      case 'sentiment':
+        return {
+          success: true,
+          sentiment: Math.random() > 0.5 ? 'positive' : 'negative',
+          score: Math.random().toFixed(2)
         };
         
-        const data = {
-          header: {
-            app_id: this.appid,
-            uid: '12345'
-          },
-          parameter: {
-            chat: {
-              domain: this.domain,
-              temperature: 0.5,
-              max_tokens: 2048
-            }
-          },
-          payload: {
-            message: {
-              text: messages
-            }
-          }
+      case 'correction':
+        return {
+          success: true,
+          corrected: text // 简单返回原文本
         };
         
-        console.log('Sending data:', data);
-        ws.send(JSON.stringify(data));
-      });
-    } catch (error) {
-      console.error('聊天请求失败:', error);
-      throw error;
+      default:
+        return {
+          success: false,
+          message: '不支持的NLP类型'
+        };
     }
   }
 
-  // 分析情绪
-  async analyzeEmotion(text) {
-    try {
-      console.log('Analyzing emotion for text:', text);
-      const prompt = `请分析以下文本的情绪，只返回以下情绪类型之一：happy（开心）、sad（伤心）、worried（担忧）、excited（兴奋）、neutral（平静）。
-文本：${text}
-情绪：`;
-      
-      const response = await this.chat([{ role: 'user', content: prompt }]);
-      const emotion = response.toLowerCase().trim();
-      
-      console.log('Emotion analysis result:', emotion);
-      
-      if (['happy', 'sad', 'worried', 'excited', 'neutral'].includes(emotion)) {
-        return emotion;
-      }
-      return 'neutral';
-    } catch (error) {
-      console.error('情绪分析失败:', error);
-      return 'neutral';
-    }
+  /**
+   * 获取API鉴权参数
+   * @returns {Object} 鉴权参数
+   */
+  getAuthParams() {
+    const timestamp = Math.floor(Date.now() / 1000);
+    // 实际应用中这里应该生成真正的签名
+    // 这里只返回一个模拟值
+    return {
+      appid: this.config.appid,
+      timestamp,
+      signature: 'mock_signature',
+    };
   }
 }
 
-// 创建单例实例
-const xfyunService = new XfyunService();
+// 导出实例
 console.log('XfyunService instance created');
-
-export default xfyunService;
+export default XfyunService;

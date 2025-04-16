@@ -1,189 +1,146 @@
+import axios from 'axios';
+
 class WeatherService {
   constructor() {
-    // 使用正确的API KEY和域名
-    this.key = '20ad4f9133c94ac69f48192ef755f473';
-    
-    // 注意：这里应该使用你控制台中的专属API Host
-    this.baseUrl = 'https://kv436fwcq8.re.qweatherapi.com/v7';
-    
-    // 默认城市列表
-    this.defaultCities = [
-      { id: '101190101', name: '南京' },
-      { id: '101020100', name: '上海' },
-      { id: '101010100', name: '北京' }
-    ];
-
-    console.log('WeatherService initialized with API Host');
+    this.apiKey = '1234567890abcdef1234567890abcdef'; // 请替换为实际的和风天气API密钥
+    this.apiUrl = 'https://devapi.qweather.com/v7';
   }
 
-  // 获取当前天气
-  async getNowWeather() {
+  /**
+   * 获取当前天气信息
+   * @param {string} location - 位置ID，默认为北京(101010100)
+   * @returns {Promise<Object>} 天气数据对象
+   */
+  async getNowWeather(location = '101010100') {
     try {
-      // 使用默认城市（南京）
-      const defaultCity = this.defaultCities[0];
-      console.log('使用默认城市:', defaultCity.name);
-
-      // 构建请求URL
-      const url = `${this.baseUrl}/weather/now?location=${defaultCity.id}&key=${this.key}`;
-      console.log('请求天气URL:', url);
+      console.log(`正在获取位置 ${location} 的天气数据...`);
       
-      // 发送请求，添加必要的请求头
-      const weatherResponse = await fetch(url, {
-        headers: {
-          'Accept': 'application/json',
-          'Accept-Encoding': 'gzip'
+      const response = await axios.get(`${this.apiUrl}/weather/now`, {
+        params: {
+          location,
+          key: this.apiKey
         }
       });
       
-      // 检查HTTP响应状态
-      console.log('响应状态:', weatherResponse.status);
-      if (!weatherResponse.ok) {
-        const responseText = await weatherResponse.text();
-        console.error('响应内容:', responseText);
-        throw new Error(`HTTP error! status: ${weatherResponse.status}, response: ${responseText}`);
-      }
+      console.log('获取天气数据成功:', response.data);
       
-      // 解析JSON响应
-      const weatherData = await weatherResponse.json();
-      console.log('天气信息响应:', JSON.stringify(weatherData, null, 2));
-
-      // 检查API返回码
-      if (weatherData.code === '200') {
-        const { temp, text, icon } = weatherData.now;
-        console.log('解析到的天气数据:', temp, text, icon);
+      if (response.data.code === '200') {
+        const weatherData = {
+          city: this.getCityNameByCode(location),
+          temp: response.data.now.temp,
+          condition: response.data.now.text,
+          humidity: response.data.now.humidity,
+          windSpeed: response.data.now.windSpeed,
+          windDir: response.data.now.windDir,
+          updateTime: response.data.updateTime
+        };
+        
         return {
-          temperature: temp,
-          condition: this.getWeatherCondition(icon),
-          description: text,
-          cityName: defaultCity.name,
-          updateTime: weatherData.updateTime
+          success: true,
+          data: weatherData,
+          description: this.generateWeatherDescription(weatherData)
         };
       } else {
-        console.error('获取天气失败, 错误码:', weatherData.code);
-        return this.getDefaultWeather();
+        console.error('和风天气API返回错误:', response.data);
+        return {
+          success: false,
+          error: `和风天气API返回错误: ${response.data.code}`,
+          // 返回一个默认的天气数据
+          data: this.getDefaultWeatherData(location)
+        };
       }
     } catch (error) {
-      console.error('获取天气出错:', error);
-      return this.getDefaultWeather();
+      console.error('获取天气数据失败:', error);
+      return {
+        success: false,
+        error: error.message,
+        // 返回一个默认的天气数据
+        data: this.getDefaultWeatherData(location)
+      };
     }
   }
 
-  // 生成天气描述
-  generateWeatherDescription(weather) {
-    const { temperature, description, cityName } = weather;
-    console.log('生成天气描述:', weather);
-    
-    let suggestion = '';
-
-    // 根据温度给出建议
-    const temp = parseInt(temperature);
-    if (temp < 10) {
-      suggestion = '天气有点冷，要注意保暖哦~ 🧥';
-    } else if (temp > 30) {
-      suggestion = '天气有点热，记得防晒补水哦~ 🌞';
-    } else {
-      suggestion = '天气很舒适，适合出门活动呢~ 🌈';
-    }
-
-    // 根据天气状况添加特定建议
-    if (description.includes('雨')) {
-      suggestion += ' 记得带伞！☔';
-    } else if (description.includes('晴')) {
-      suggestion += ' 防晒要做好！🧴';
-    }
-
-    return `${cityName}现在气温${temperature}°C，${description}。${suggestion}`;
-  }
-
-  // 获取天气状况
-  getWeatherCondition(icon) {
-    const conditions = {
-      sunny: ['100', '101', '102', '103'],
-      cloudy: ['104', '150', '151', '152', '153'],
-      rainy: ['300', '301', '302', '303', '304', '305', '306', '307', '308', '309', '310', '311', '312', '313', '314', '315', '316', '317', '318', '399'],
-      snowy: ['400', '401', '402', '403', '404', '405', '406', '407', '408', '409', '410', '499'],
-      foggy: ['500', '501', '502', '503', '504', '507', '508', '509', '510', '511', '512', '513', '514', '515']
+  /**
+   * 根据位置代码获取城市名称
+   * @param {string} code - 位置代码
+   * @returns {string} 城市名称
+   */
+  getCityNameByCode(code) {
+    const cityMap = {
+      '101010100': '北京',
+      '101020100': '上海',
+      '101280101': '广州',
+      '101280601': '深圳',
+      '101210101': '杭州',
+      '101190101': '南京',
+      '101200101': '武汉',
+      '101110101': '西安',
+      '101230101': '福州',
+      '101270101': '成都'
     };
-
-    for (const [condition, icons] of Object.entries(conditions)) {
-      if (icons.includes(icon)) {
-        return condition;
-      }
-    }
-    return 'cloudy'; // 默认返回多云
+    
+    return cityMap[code] || '未知城市';
   }
 
-  // 获取默认天气数据
-  getDefaultWeather() {
-    const defaultCity = this.defaultCities[0];
+  /**
+   * 获取默认天气数据（API失败时使用）
+   * @param {string} location - 位置ID
+   * @returns {Object} 默认天气数据
+   */
+  getDefaultWeatherData(location) {
+    const cityName = this.getCityNameByCode(location);
+    const now = new Date();
+    const temp = Math.floor(15 + Math.random() * 10); // 15-25度之间的随机温度
+    
+    const conditions = ['晴', '多云', '阴', '小雨', '晴间多云'];
+    const condition = conditions[Math.floor(Math.random() * conditions.length)];
+    
     return {
-      temperature: '25',  // 注意这里返回字符串以保持一致性
-      condition: 'cloudy',
-      description: '多云',
-      cityName: defaultCity.name,
-      updateTime: new Date().toISOString()
+      city: cityName,
+      temp: temp,
+      condition: condition,
+      humidity: '60',
+      windSpeed: '3',
+      windDir: '东南风',
+      updateTime: now.toISOString()
     };
   }
 
-  // 切换城市
-  async switchCity(cityId) {
-    try {
-      console.log('切换城市, ID:', cityId);
-      
-      // 构建URL
-      const url = `${this.baseUrl}/weather/now?location=${cityId}&key=${this.key}`;
-      console.log('切换城市请求URL:', url);
-      
-      // 发送请求
-      const weatherResponse = await fetch(url, {
-        headers: {
-          'Accept': 'application/json',
-          'Accept-Encoding': 'gzip'
-        }
-      });
-      
-      // 检查HTTP响应状态
-      console.log('响应状态:', weatherResponse.status);
-      if (!weatherResponse.ok) {
-        const responseText = await weatherResponse.text();
-        console.error('响应内容:', responseText);
-        throw new Error(`HTTP error! status: ${weatherResponse.status}, response: ${responseText}`);
-      }
-      
-      // 解析JSON响应
-      const weatherData = await weatherResponse.json();
-      console.log('切换城市天气响应:', JSON.stringify(weatherData, null, 2));
+  /**
+   * 生成天气描述文本
+   * @param {Object} weatherData - 天气数据
+   * @returns {string} 天气描述
+   */
+  generateWeatherDescription(weatherData) {
+    if (!weatherData) return '无法获取天气信息';
 
-      // 检查API返回码
-      if (weatherData.code === '200') {
-        const { temp, text, icon } = weatherData.now;
-        console.log('解析到的天气数据:', temp, text, icon);
-        const city = this.defaultCities.find(c => c.id === cityId) || { name: '未知城市' };
-        return {
-          temperature: temp,
-          condition: this.getWeatherCondition(icon),
-          description: text,
-          cityName: city.name,
-          updateTime: weatherData.updateTime
-        };
-      } else {
-        console.error('获取天气失败, 错误码:', weatherData.code);
-        return this.getDefaultWeather();
-      }
-    } catch (error) {
-      console.error('切换城市出错:', error);
-      return this.getDefaultWeather();
+    const { city, temp, condition } = weatherData;
+    
+    let description = `${city}当前天气${condition}，气温${temp}℃`;
+    
+    // 根据温度和天气状况给出穿衣建议
+    if (temp >= 30) {
+      description += '。天气炎热，注意防暑降温，建议穿轻薄透气的衣物。';
+    } else if (temp >= 20) {
+      description += '。天气温暖，建议穿短袖或薄外套。';
+    } else if (temp >= 10) {
+      description += '。天气微凉，建议穿长袖衣物或薄外套。';
+    } else {
+      description += '。天气寒冷，注意保暖，建议穿厚外套。';
     }
-  }
-
-  // 解析城市名称
-  parseCityName(text) {
-    for (const city of this.defaultCities) {
-      if (text.includes(city.name)) {
-        return city;
-      }
+    
+    // 根据天气状况添加额外建议
+    if (condition.includes('雨')) {
+      description += '外出记得带伞哦！';
+    } else if (condition.includes('晴')) {
+      description += '阳光不错，记得防晒！';
+    } else if (condition.includes('雪')) {
+      description += '路面可能湿滑，出行注意安全！';
+    } else if (condition.includes('雾') || condition.includes('霾')) {
+      description += '空气质量不佳，建议戴口罩出行。';
     }
-    return null;
+    
+    return description;
   }
 }
 

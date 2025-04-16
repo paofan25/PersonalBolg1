@@ -1,33 +1,25 @@
 <template>
-  <div class="emoji-picker" v-show="visible" :style="position">
-    <div class="emoji-categories">
-      <button 
-        v-for="category in categories" 
-        :key="category.name"
-        class="category-btn"
-        :class="{ active: currentCategory === category.name }"
-        @click="currentCategory = category.name">
-        {{ category.icon }}
-      </button>
-    </div>
-    <div class="emoji-list">
-      <button 
-        v-for="emoji in currentEmojis" 
-        :key="emoji.char"
-        class="emoji-btn"
-        @click="selectEmoji(emoji)">
-        {{ emoji.char }}
-      </button>
-    </div>
-    <div class="recently-used" v-if="recentEmojis.length">
-      <div class="section-title">最近使用</div>
+  <div class="emoji-picker" v-if="isVisible">
+    <div class="emoji-picker-content">
+      <div class="emoji-categories">
+        <button 
+          v-for="(category, index) in categories" 
+          :key="index"
+          @click="selectCategory(category)"
+          :class="{ active: currentCategory === category.name }"
+          class="category-btn"
+        >
+          {{ category.icon }}
+        </button>
+      </div>
       <div class="emoji-list">
         <button 
-          v-for="emoji in recentEmojis" 
-          :key="emoji.char"
+          v-for="emoji in filteredEmojis" 
+          :key="emoji"
+          @click="selectEmoji(emoji)"
           class="emoji-btn"
-          @click="selectEmoji(emoji)">
-          {{ emoji.char }}
+        >
+          {{ emoji }}
         </button>
       </div>
     </div>
@@ -35,150 +27,66 @@
 </template>
 
 <script>
-const CATEGORIES = [
-  {
-    name: 'faces',
-    icon: '😊',
-    emojis: [
-      { char: '😊', name: 'smile' },
-      { char: '😂', name: 'joy' },
-      { char: '🥰', name: 'love' },
-      { char: '😴', name: 'sleepy' },
-      { char: '😢', name: 'cry' },
-      { char: '😍', name: 'heart_eyes' },
-      { char: '🤔', name: 'thinking' },
-      { char: '😮', name: 'wow' },
-      { char: '🥺', name: 'pleading' },
-      { char: '😋', name: 'yum' }
-    ]
-  },
-  {
-    name: 'animals',
-    icon: '🐱',
-    emojis: [
-      { char: '🐱', name: 'cat' },
-      { char: '🐰', name: 'rabbit' },
-      { char: '🐶', name: 'dog' },
-      { char: '🦊', name: 'fox' },
-      { char: '🐼', name: 'panda' },
-      { char: '🐨', name: 'koala' },
-      { char: '🦁', name: 'lion' },
-      { char: '🐯', name: 'tiger' },
-      { char: '🐭', name: 'mouse' },
-      { char: '🦄', name: 'unicorn' }
-    ]
-  },
-  {
-    name: 'food',
-    icon: '🍰',
-    emojis: [
-      { char: '🍰', name: 'cake' },
-      { char: '🍪', name: 'cookie' },
-      { char: '🍦', name: 'icecream' },
-      { char: '🍡', name: 'dango' },
-      { char: '🍫', name: 'chocolate' },
-      { char: '🧁', name: 'cupcake' },
-      { char: '🍮', name: 'pudding' },
-      { char: '🍭', name: 'lollipop' },
-      { char: '🍬', name: 'candy' },
-      { char: '🍯', name: 'honey' }
-    ]
-  },
-  {
-    name: 'weather',
-    icon: '☀️',
-    emojis: [
-      { char: '☀️', name: 'sun' },
-      { char: '☁️', name: 'cloud' },
-      { char: '🌧️', name: 'rain' },
-      { char: '⛈️', name: 'storm' },
-      { char: '🌈', name: 'rainbow' },
-      { char: '❄️', name: 'snow' },
-      { char: '🌙', name: 'moon' },
-      { char: '⭐', name: 'star' },
-      { char: '✨', name: 'sparkles' },
-      { char: '🌸', name: 'flower' }
-    ]
-  }
-];
-
-const MAX_RECENT = 20;
-
 export default {
   name: 'EmojiPicker',
   props: {
-    visible: {
+    isVisible: {
       type: Boolean,
+      required: true,
       default: false
-    },
-    position: {
-      type: Object,
-      default: () => ({})
     }
   },
   data() {
     return {
-      categories: CATEGORIES,
       currentCategory: 'faces',
-      recentEmojis: []
-    };
+      categories: [
+        { name: 'faces', icon: '😀', emojis: ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕'] },
+        { name: 'animals', icon: '🐱', emojis: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🙈', '🙉', '🙊', '🐔', '🐧', '🐦', '🐤', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🐛', '🦋', '🐌', '🐞', '🐜', '🦟', '🦗', '🕷', '🕸', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🐊', '🐅', '🐆', '🦓', '🦍', '🦧', '🐘', '🦛', '🦏', '🐪', '🐫', '🦒', '🦘', '🐃', '🐂', '🐄', '🐎', '🐖', '🐏', '🐑', '🦙', '🐐', '🦌', '🐕', '🐩', '🦮', '🐕‍🦺', '🐈', '🐓', '🦃', '🦚', '🦜', '🦢', '🦩', '🕊', '🐇', '🦝', '🦨', '🦡', '🦦', '🦥', '🐁', '🐀', '🐿', '🦔'] },
+        { name: 'food', icon: '🍎', emojis: ['🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅', '🍆', '🥑', '🥦', '🥬', '🥒', '🌶', '🌽', '🥕', '🧄', '🧅', '🥔', '🍠', '🥐', '🥯', '🍞', '🥖', '🥨', '🧀', '🥚', '🍳', '🧈', '🥞', '🧇', '🥓', '🥩', '🍗', '🍖', '🦴', '🌭', '🍔', '🍟', '🍕', '🥪', '🥙', '🧆', '🌮', '🌯', '🥗', '🥘', '🥫', '🍝', '🍜', '🍲', '🍛', '🍣', '🍱', '🥟', '🦪', '🍤', '🍙', '🍚', '🍘', '🍥', '🥠', '🥮', '🍢', '🍡', '🍧', '🍨', '🍦', '🥧', '🧁', '🍰', '🎂', '🍮', '🍭', '🍬', '🍫', '🍿', '🍩', '🍪', '🌰', '🥜', '🍯', '🥛', '🍼', '☕', '🍵', '🧃', '🥤', '🍶', '🍺', '🍻', '🥂', '🍷', '🥃', '🍸', '🍹', '🧉', '🍾', '🧊'] },
+        { name: 'weather', icon: '☀️', emojis: ['☀️', '🌤', '⛅', '🌥', '☁️', '🌦', '🌧', '⛈', '🌩', '🌨', '❄️', '☃️', '⛄', '🌬', '💨', '🌪', '🌫', '🌊', '💧', '💦', '☔', '🌈', '🌡'] },
+        { name: 'hearts', icon: '❤️', emojis: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟'] },
+      ]
+    }
   },
   computed: {
-    currentEmojis() {
+    filteredEmojis() {
       const category = this.categories.find(c => c.name === this.currentCategory);
       return category ? category.emojis : [];
     }
   },
   methods: {
+    selectCategory(category) {
+      this.currentCategory = category.name;
+    },
     selectEmoji(emoji) {
-      this.$emit('select', emoji);
-      this.addToRecent(emoji);
-    },
-    addToRecent(emoji) {
-      const index = this.recentEmojis.findIndex(e => e.char === emoji.char);
-      if (index > -1) {
-        this.recentEmojis.splice(index, 1);
-      }
-      this.recentEmojis.unshift(emoji);
-      if (this.recentEmojis.length > MAX_RECENT) {
-        this.recentEmojis.pop();
-      }
-      this.saveRecent();
-    },
-    saveRecent() {
-      localStorage.setItem('recentEmojis', JSON.stringify(this.recentEmojis));
-    },
-    loadRecent() {
-      const saved = localStorage.getItem('recentEmojis');
-      if (saved) {
-        try {
-          this.recentEmojis = JSON.parse(saved);
-        } catch (e) {
-          console.error('Error loading recent emojis:', e);
-        }
-      }
+      this.$emit('emoji-selected', emoji);
     }
-  },
-  mounted() {
-    this.loadRecent();
   }
-};
+}
 </script>
 
 <style scoped>
 .emoji-picker {
   position: absolute;
+  bottom: 100%;
+  right: 0;
   width: 300px;
-  background: white;
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-lg);
-  padding: 10px;
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   z-index: 1000;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.emoji-picker-content {
+  padding: 10px;
 }
 
 .emoji-categories {
   display: flex;
-  border-bottom: 1px solid var(--border-color);
+  justify-content: space-between;
+  border-bottom: 1px solid #f0f0f0;
   padding-bottom: 8px;
   margin-bottom: 8px;
 }
@@ -186,53 +94,36 @@ export default {
 .category-btn {
   background: none;
   border: none;
-  padding: 6px;
-  font-size: 1.2rem;
+  font-size: 20px;
   cursor: pointer;
-  opacity: 0.6;
-  transition: all var(--transition-fast);
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
 }
 
 .category-btn.active {
-  opacity: 1;
-  transform: scale(1.1);
-}
-
-.category-btn:hover {
-  opacity: 1;
+  background-color: #f0f0f0;
 }
 
 .emoji-list {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   gap: 4px;
-  padding: 8px 0;
+  max-height: 200px;
+  overflow-y: auto;
 }
 
 .emoji-btn {
   background: none;
   border: none;
-  padding: 6px;
-  font-size: 1.2rem;
+  font-size: 24px;
   cursor: pointer;
-  transition: transform var(--transition-fast);
+  padding: 6px;
   border-radius: 4px;
+  transition: all 0.2s;
 }
 
 .emoji-btn:hover {
-  background: var(--bg-secondary);
-  transform: scale(1.2);
-}
-
-.section-title {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  margin: 8px 0 4px;
-}
-
-.recently-used {
-  border-top: 1px solid var(--border-color);
-  margin-top: 8px;
-  padding-top: 8px;
+  background-color: #f0f0f0;
 }
 </style>
