@@ -1,0 +1,29 @@
+:root {
+  /* 主题色 */
+  --primary-purple: #B39DDB;
+  --primary-pink: #F48FB1;
+  --primary-blue: #90CAF9;
+  --primary-yellow: #FFE082;
+  
+  /* 文本颜色 */
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  
+  /* 背景色 */
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F5F5F5;
+  
+  /* 边框 */
+  --border-radius: 12px;
+  --border-color: #E0E0E0;
+  
+  /* 阴影 */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  
+  /* 动画时间 */
+  --transition-fast: 0.2s;
+  --transition-normal: 0.3s;
+  --transition-slow: 0.5s;
+}

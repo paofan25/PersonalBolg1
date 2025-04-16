@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✨ 拼图游戏 ✨</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .game-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .puzzle-container {
+            display: inline-block;
+            position: relative;
+            margin: 2rem auto;
+            border: 4px solid var(--secondary-color);
+            border-radius: 1rem;
+            overflow: hidden;
+        }
+
+        .puzzle-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+            background-color: var(--secondary-color);
+        }
+
+        .puzzle-piece {
+            width: 100px;
+            height: 100px;
+            background-size: 300px 300px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .puzzle-piece:hover {
+            transform: scale(0.95);
+        }
+
+        .empty {
+            background: white !important;
+        }
+
+        .controls {
+            margin: 2rem 0;
+        }
+
+        .btn {
+            margin: 0 0.5rem;
+        }
+
+        .game-info {
+            margin: 1rem 0;
+        }
+
+        .moves {
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            margin: 1rem 0;
+        }
+
+        .timer {
+            font-size: 1.2rem;
+            color: var(--text-color);
+        }
+
+        .image-select {
+            margin: 1rem 0;
+        }
+
+        .image-select select {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--secondary-color);
+            border-radius: 1rem;
+            outline: none;
+            font-size: 1rem;
+            color: var(--text-color);
+        }
+
+        @media (max-width: 768px) {
+            .puzzle-piece {
+                width: 80px;
+                height: 80px;
+                background-size: 240px 240px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1 class="game-title">✨ 拼图游戏 ✨</h1>
+
+        <div class="image-select">
+            <select id="imageSelect">
+                <option value="1">可爱猫咪</option>
+                <option value="2">小熊维尼</option>
+                <option value="3">樱花</option>
+            </select>
+        </div>
+
+        <div class="game-info">
+            <div class="moves">步数: <span id="moves">0</span></div>
+            <div class="timer">时间: <span id="time">0:00</span></div>
+        </div>
+
+        <div class="puzzle-container">
+            <div class="puzzle-grid" id="puzzleGrid"></div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" id="startBtn">开始游戏</button>
+            <button class="btn" id="restartBtn">重新开始</button>
+        </div>
+    </div>
+
+    <script>
+        class PuzzleGame {
+            constructor() {
+                this.grid = [];
+                this.moves = 0;
+                this.timeElapsed = 0;
+                this.timer = null;
+                this.isPlaying = false;
+                this.emptyCell = { row: 2, col: 2 };
+                
+                this.puzzleGrid = document.getElementById('puzzleGrid');
+                this.movesElement = document.getElementById('moves');
+                this.timeElement = document.getElementById('time');
+                this.startBtn = document.getElementById('startBtn');
+                this.restartBtn = document.getElementById('restartBtn');
+                this.imageSelect = document.getElementById('imageSelect');
+
+                this.images = [
+                    'https://placekitten.com/300/300',
+                    'https://source.unsplash.com/300x300/?winnie-the-pooh',
+                    'https://source.unsplash.com/300x300/?cherry-blossom'
+                ];
+
+                this.initializeGame();
+            }
+
+            initializeGame() {
+                this.startBtn.addEventListener('click', () => this.startGame());
+                this.restartBtn.addEventListener('click', () => this.resetGame());
+                this.imageSelect.addEventListener('change', () => this.updateImage());
+            }
+
+            startGame() {
+                this.resetGame();
+                this.createPuzzle();
+                this.shufflePuzzle();
+                this.startTimer();
+                this.isPlaying = true;
+            }
+
+            resetGame() {
+                this.moves = 0;
+                this.timeElapsed = 0;
+                this.updateMoves();
+                this.updateTimer();
+                if (this.timer) clearInterval(this.timer);
+                this.isPlaying = false;
+                this.emptyCell = { row: 2, col: 2 };
+            }
+
+            createPuzzle() {
+                this.puzzleGrid.innerHTML = '';
+                const imageUrl = this.images[this.imageSelect.value - 1];
+
+                for (let row = 0; row < 3; row++) {
+                    for (let col = 0; col < 3; col++) {
+                        const piece = document.createElement('div');
+                        piece.className = 'puzzle-piece';
+                        
+                        if (row === 2 && col === 2) {
+                            piece.classList.add('empty');
+                        } else {
+                            piece.style.backgroundImage = `url(${imageUrl})`;
+                            piece.style.backgroundPosition = `-${col * 100}px -${row * 100}px`;
+                        }
+
+                        piece.addEventListener('click', () => this.movePiece(row, col));
+                        this.puzzleGrid.appendChild(piece);
+                    }
+                }
+            }
+
+            movePiece(row, col) {
+                if (!this.isPlaying) return;
+
+                const dx = Math.abs(row - this.emptyCell.row);
+                const dy = Math.abs(col - this.emptyCell.col);
+
+                if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
+                    const pieces = this.puzzleGrid.children;
+                    const currentIndex = row * 3 + col;
+                    const emptyIndex = this.emptyCell.row * 3 + this.emptyCell.col;
+
+                    // 交换背景
+                    const currentStyle = pieces[currentIndex].style.backgroundImage;
+                    const currentPosition = pieces[currentIndex].style.backgroundPosition;
+                    
+                    pieces[currentIndex].style.backgroundImage = '';
+                    pieces[currentIndex].style.backgroundPosition = '';
+                    pieces[currentIndex].classList.add('empty');
+
+                    pieces[emptyIndex].style.backgroundImage = currentStyle;
+                    pieces[emptyIndex].style.backgroundPosition = currentPosition;
+                    pieces[emptyIndex].classList.remove('empty');
+
+                    this.emptyCell = { row, col };
+                    this.moves++;
+                    this.updateMoves();
+                    this.checkWin();
+                }
+            }
+
+            shufflePuzzle() {
+                const moves = [];
+                for (let i = 0; i < 100; i++) {
+                    const possibleMoves = this.getPossibleMoves();
+                    const move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+                    this.movePiece(move.row, move.col);
+                    moves.push(move);
+                }
+                this.moves = 0;
+                this.updateMoves();
+            }
+
+            getPossibleMoves() {
+                const moves = [];
+                const { row, col } = this.emptyCell;
+
+                if (row > 0) moves.push({ row: row - 1, col });
+                if (row < 2) moves.push({ row: row + 1, col });
+                if (col > 0) moves.push({ row, col: col - 1 });
+                if (col < 2) moves.push({ row, col: col + 1 });
+
+                return moves;
+            }
+
+            checkWin() {
+                // 实现获胜检查逻辑
+            }
+
+            startTimer() {
+                this.timer = setInterval(() => {
+                    this.timeElapsed++;
+                    this.updateTimer();
+                }, 1000);
+            }
+
+            updateTimer() {
+                const minutes = Math.floor(this.timeElapsed / 60);
+                const seconds = this.timeElapsed % 60;
+                this.timeElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            updateMoves() {
+                this.movesElement.textContent = this.moves;
+            }
+
+            updateImage() {
+                if (this.isPlaying) {
+                    this.resetGame();
+                    this.createPuzzle();
+                }
+            }
+        }
+
+        // 启动游戏
+        window.onload = () => {
+            new PuzzleGame();
+        };
+    </script>
+</body>
+</html>

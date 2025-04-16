@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✨小可爱の主页✨</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./css/style.css">
+    <style>
+        /* 添加一些额外的样式来确保页面正确显示 */
+        .profile-section {
+            text-align: center;
+            padding: 4rem 2rem;
+            margin-top: 2rem;
+        }
+
+        .profile-avatar {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            border: 8px solid white;
+            box-shadow: 0 4px 15px rgba(255, 158, 205, 0.3);
+            margin-bottom: 2rem;
+        }
+
+        .profile-description {
+            font-size: 1.2rem;
+            color: #666;
+            margin: 1rem 0;
+            line-height: 1.8;
+        }
+
+        .content-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            padding: 2rem;
+        }
+
+        .card {
+            background: white;
+            padding: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 4px 15px rgba(255, 158, 205, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h2 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .social-links a {
+            color: var(--primary-color);
+            text-decoration: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 2rem;
+            background: white;
+            box-shadow: 0 4px 15px rgba(255, 158, 205, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .social-links a:hover {
+            transform: translateY(-3px);
+            background: var(--primary-color);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="nav-bar">
+        <a href="./index.html" class="logo">
+            <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=flower" alt="Logo">
+            小可爱の主页
+        </a>
+        <div class="nav-links">
+            <a href="./index.html">首页</a>
+            <a href="./blog.html">博客</a>
+            <a href="./works.html">作品</a>
+            <a href="./message.html">留言板</a>
+            <div class="games-group">
+                <a href="#" id="gamesBtn">小游戏 ▾</a>
+                <div class="games-menu" id="gamesMenu">
+                    <a href="./games/snake.html">♡ 贪吃蛇</a>
+                    <a href="./games/memory.html">♡ 记忆配对</a>
+                    <a href="./games/puzzle.html">♡ 拼图游戏</a>
+                </div>
+            </div>
+            <a href="#" class="login-btn" id="loginBtn">登录/注册</a>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <div class="main-content">
+        <!-- 个人介绍部分 -->
+        <div class="profile-section">
+            <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=flower" alt="头像" class="profile-avatar">
+            <h1>✨ 欢迎来到我的小天地 ✨</h1>
+            <p class="profile-description">
+                一个热爱生活、热爱编程的小可爱～<br>
+                喜欢创造有趣的东西，分享快乐给大家！
+            </p>
+        </div>
+
+        <!-- 内容卡片 -->
+        <div class="content-cards">
+            <div class="card">
+                <h2>关于我 ♪</h2>
+                <p>
+                    哈喽！我是一个充满好奇心的小可爱～<br>
+                    喜欢编程、画画、听音乐，梦想是成为一名优秀的全栈工程师！<br>
+                    最爱的事情就是学习新技术，创造有趣的作品啦 (｡♥‿♥｡)
+                </p>
+            </div>
+
+            <div class="card">
+                <h2>我的技能 ✧</h2>
+                <ul class="skill-list">
+                    <li>HTML5 & CSS3 魔法师</li>
+                    <li>JavaScript 小能手</li>
+                    <li>React & Vue.js 爱好者</li>
+                    <li>UI 设计初学者</li>
+                    <li>Python 探索者</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2>有趣经历 ⭐</h2>
+                <ul class="skill-list">
+                    <li>参与开发可爱的个人博客</li>
+                    <li>制作过超萌的小游戏</li>
+                    <li>设计过治愈系网页</li>
+                    <li>写过一些有趣的小工具</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 社交链接 -->
+        <div class="social-links">
+            <a href="#">✧ GitHub ✧</a>
+            <a href="#">✧ 微博 ✧</a>
+            <a href="#">✧ 知乎 ✧</a>
+        </div>
+    </div>
+
+    <!-- 登录表单 -->
+    <div class="form-container" id="loginForm" style="display: none;">
+        <h2>登录</h2>
+        <form>
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" class="form-input" placeholder="请输入用户名" required>
+            </div>
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" class="form-input" placeholder="请输入密码" required>
+            </div>
+            <button type="submit" class="form-submit">登录</button>
+            <p style="text-align: center; margin-top: 1rem;">
+                还没有账号？<a href="#" class="link" id="showRegister">立即注册</a>
+            </p>
+        </form>
+    </div>
+
+    <!-- 注册表单 -->
+    <div class="form-container" id="registerForm" style="display: none;">
+        <h2>注册</h2>
+        <form>
+            <div class="form-group">
+                <label for="reg-username">用户名</label>
+                <input type="text" id="reg-username" class="form-input" placeholder="请输入用户名" required>
+            </div>
+            <div class="form-group">
+                <label for="reg-email">邮箱</label>
+                <input type="email" id="reg-email" class="form-input" placeholder="请输入邮箱" required>
+            </div>
+            <div class="form-group">
+                <label for="reg-password">密码</label>
+                <input type="password" id="reg-password" class="form-input" placeholder="请输入密码" required>
+            </div>
+            <div class="form-group">
+                <label for="reg-confirm-password">确认密码</label>
+                <input type="password" id="reg-confirm-password" class="form-input" placeholder="请再次输入密码" required>
+            </div>
+            <div class="form-group">
+                <label for="avatar" class="file-upload">
+                    选择头像
+                    <input type="file" id="avatar" accept="image/*" style="display: none;">
+                </label>
+            </div>
+            <button type="submit" class="form-submit">注册</button>
+            <p style="text-align: center; margin-top: 1rem;">
+                已有账号？<a href="#" class="link" id="showLogin">立即登录</a>
+            </p>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginBtn = document.getElementById('loginBtn');
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const showRegister = document.getElementById('showRegister');
+            const showLogin = document.getElementById('showLogin');
+            const gamesBtn = document.getElementById('gamesBtn');
+            const gamesMenu = document.getElementById('gamesMenu');
+
+            // 登录/注册表单控制
+            loginBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                loginForm.style.display = 'block';
+                registerForm.style.display = 'none';
+            });
+
+            showRegister.addEventListener('click', (e) => {
+                e.preventDefault();
+                loginForm.style.display = 'none';
+                registerForm.style.display = 'block';
+            });
+
+            showLogin.addEventListener('click', (e) => {
+                e.preventDefault();
+                registerForm.style.display = 'none';
+                loginForm.style.display = 'block';
+            });
+
+            // 游戏菜单控制
+            let isGamesMenuVisible = false;
+            gamesBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                isGamesMenuVisible = !isGamesMenuVisible;
+                gamesMenu.style.display = isGamesMenuVisible ? 'block' : 'none';
+            });
+
+            // 点击页面其他地方关闭表单和菜单
+            document.addEventListener('click', (e) => {
+                if (!loginForm.contains(e.target) && 
+                    !registerForm.contains(e.target) && 
+                    !loginBtn.contains(e.target)) {
+                    loginForm.style.display = 'none';
+                    registerForm.style.display = 'none';
+                }
+
+                if (!gamesBtn.contains(e.target) && !gamesMenu.contains(e.target)) {
+                    gamesMenu.style.display = 'none';
+                    isGamesMenuVisible = false;
+                }
+            });
+
+            // 阻止表单内点击事件冒泡
+            [loginForm, registerForm].forEach(form => {
+                form.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+            });
+        });
+    </script>
+</body>
+</html>

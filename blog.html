@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✨ 博客 - 小可爱の主页 ✨</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./css/style.css">
+    <style>
+        .blog-container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 1rem;
+        }
+
+        .blog-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .blog-title {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .blog-description {
+            font-size: 1.1rem;
+            color: #666;
+        }
+
+        .blog-posts {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .post-card {
+            background: white;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(255, 158, 205, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .post-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(255, 158, 205, 0.3);
+        }
+
+        .post-image {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+        }
+
+        .post-content {
+            padding: 1.5rem;
+        }
+
+        .post-title {
+            font-size: 1.3rem;
+            color: #333;
+            margin-bottom: 0.8rem;
+        }
+
+        .post-excerpt {
+            color: #666;
+            margin-bottom: 1rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .post-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #999;
+        }
+
+        .post-date {
+            font-style: italic;
+        }
+
+        .post-stats {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .post-tag {
+            display: inline-block;
+            background: #f0f0f0;
+            padding: 0.3rem 0.8rem;
+            border-radius: 1rem;
+            font-size: 0.8rem;
+            color: #666;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .post-tags {
+            margin-bottom: 1rem;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 3rem;
+        }
+
+        .pagination button {
+            padding: 0.5rem 1rem;
+            border: none;
+            background: white;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .pagination button:hover,
+        .pagination button.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .pagination button:disabled {
+            background: #f0f0f0;
+            color: #999;
+            cursor: not-allowed;
+        }
+
+        .create-post-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            box-shadow: 0 4px 15px rgba(255, 158, 205, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .create-post-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(255, 158, 205, 0.4);
+        }
+
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .post-form .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .post-form label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #666;
+        }
+
+        .post-form input,
+        .post-form textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #f0f0f0;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .post-form textarea {
+            height: 200px;
+            resize: vertical;
+        }
+
+        .post-form button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            float: right;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .no-posts {
+            text-align: center;
+            padding: 3rem;
+            color: #999;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="nav-bar">
+        <a href="./index.html" class="logo">
+            <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=flower" alt="Logo">
+            小可爱の主页
+        </a>
+        <div class="nav-links">
+            <a href="./index.html">首页</a>
+            <a href="./blog.html">博客</a>
+            <a href="./works.html">作品</a>
+            <a href="./message.html">留言板</a>
+            <div class="games-group">
+                <a href="#" id="gamesBtn">小游戏 ▾</a>
+                <div class="games-menu" id="gamesMenu">
+                    <a href="./games/snake.html">♡ 贪吃蛇</a>
+                    <a href="./games/memory.html">♡ 记忆配对</a>
+                    <a href="./games/puzzle.html">♡ 拼图游戏</a>
+                </div>
+            </div>
+            <a href="#" class="login-btn" id="loginBtn">登录/注册</a>
+            <div class="user-menu" id="userMenu" style="display: none;">
+                <img src="" alt="" id="userAvatar" class="user-avatar">
+                <div class="user-dropdown">
+                    <a href="./profile.html">个人资料</a>
+                    <a href="#" id="logoutBtn">退出登录</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 博客内容 -->
+    <div class="blog-container">
+        <div class="blog-header">
+            <h1 class="blog-title">✨ 我的博客 ✨</h1>
+            <p class="blog-description">分享我的想法、经验和生活点滴</p>
+        </div>
+
+        <div class="blog-posts" id="blogPosts">
+            <!-- 博客文章将通过JavaScript动态生成 -->
+        </div>
+
+        <div class="pagination" id="pagination">
+            <!-- 分页按钮将通过JavaScript动态生成 -->
+        </div>
+    </div>
+
+    <!-- 创建文章按钮 -->
+    <div class="create-post-btn" id="createPostBtn">+</div>
+
+    <!-- 创建文章模态框 -->
+    <div class="modal" id="createPostModal">
+        <div class="modal-content">
+            <span class="modal-close" id="closePostModal">&times;</span>
+            <h2 class="modal-title">创建新文章</h2>
+            <form class="post-form" id="postForm">
+                <div class="form-group">
+                    <label for="postTitle">标题</label>
+                    <input type="text" id="postTitle" placeholder="请输入文章标题" required>
+                </div>
+                <div class="form-group">
+                    <label for="postCover">封面图片URL</label>
+                    <input type="text" id="postCover" placeholder="请输入封面图片URL">
+                </div>
+                <div class="form-group">
+                    <label for="postTags">标签（用逗号分隔）</label>
+                    <input type="text" id="postTags" placeholder="例如：编程,生活,前端">
+                </div>
+                <div class="form-group">
+                    <label for="postContent">内容</label>
+                    <textarea id="postContent" placeholder="请输入文章内容..." required></textarea>
+                </div>
+                <button type="submit">发布文章</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 登录表单模态框 -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <span class="modal-close" id="closeLoginModal">&times;</span>
+            <h2 class="modal-title">登录</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <input type="text" id="username" placeholder="请输入用户名" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" placeholder="请输入密码" required>
+                </div>
+                <button type="submit">登录</button>
+                <p style="text-align: center; margin-top: 1rem;">
+                    还没有账号？<a href="#" id="showRegister">立即注册</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- 注册表单模态框 -->
+    <div class="modal" id="registerModal">
+        <div class="modal-content">
+            <span class="modal-close" id="closeRegisterModal">&times;</span>
+            <h2 class="modal-title">注册</h2>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="regUsername">用户名</label>
+                    <input type="text" id="regUsername" placeholder="请输入用户名" required>
+                </div>
+                <div class="form-group">
+                    <label for="regEmail">邮箱</label>
+                    <input type="email" id="regEmail" placeholder="请输入邮箱" required>
+                </div>
+                <div class="form-group">
+                    <label for="regPassword">密码</label>
+                    <input type="password" id="regPassword" placeholder="请输入密码" required>
+                </div>
+                <div class="form-group">
+                    <label for="regConfirmPassword">确认密码</label>
+                    <input type="password" id="regConfirmPassword" placeholder="请再次输入密码" required>
+                </div>
+                <button type="submit">注册</button>
+                <p style="text-align: center; margin-top: 1rem;">
+                    已有账号？<a href="#" id="showLogin">立即登录</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { blogService, authService } from './js/backend/index.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // 全局变量
+            let currentPage = 1;
+            const postsPerPage = 6;
+
+            // DOM元素
+            const blogPostsContainer = document.getElementById('blogPosts');
+            const paginationContainer = document.getElementById('pagination');
+            const createPostBtn = document.getElementById('createPostBtn');
+            const createPostModal = document.getElementById('createPostModal');
+            const closePostModal = document.getElementById('closePostModal');
+            const postForm = document.getElementById('postForm');
+            const loginBtn = document.getElementById('loginBtn');
+            const userMenu = document.getElementById('userMenu');
+            const userAvatar = document.getElementById('userAvatar');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const loginModal = document.getElementById('loginModal');
+            const registerModal = document.getElementById('registerModal');
+            const closeLoginModal = document.getElementById('closeLoginModal');
+            const closeRegisterModal = document.getElementById('closeRegisterModal');
+            const showRegister = document.getElementById('showRegister');
+            const showLogin = document.getElementById('showLogin');
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const gamesBtn = document.getElementById('gamesBtn');
+            const gamesMenu = document.getElementById('gamesMenu');
+
+            // 加载博客文章
+            function loadPosts() {
+                try {
+                    const result = blogService.getAllPosts(currentPage, postsPerPage);
+                    const { posts, totalPages } = result;
+
+                    // 清空内容
+                    blogPostsContainer.innerHTML = '';
+
+                    if (posts.length === 0) {
+                        blogPostsContainer.innerHTML = '<div class="no-posts">暂无文章，快来发布第一篇吧！</div>';
+                        return;
+                    }
+
+                    // 渲染文章
+                    posts.forEach(post => {
+                        // 获取文章作者信息
+                        const author = post.author || { username: '未知用户' };
+                        
+                        // 创建文章卡片
+                        const postCard = document.createElement('div');
+                        postCard.className = 'post-card';
+                        
+                        // 设置封面图片
+                        const coverImage = post.coverImage || 'https://source.unsplash.com/random/800x600/?blog';
+                        
+                        // 提取摘要
+                        const excerpt = post.content.replace(/<\/?[^>]+(>|$)/g, "").substring(0, 120) + '...';
+                        
+                        // 格式化日期
+                        const date = new Date(post.createdAt);
+                        const formattedDate = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+                        
+                        // 设置文章HTML
+                        postCard.innerHTML = `
+                            <img src="${coverImage}" alt="${post.title}" class="post-image">
+                            <div class="post-content">
+                                <h2 class="post-title">${post.title}</h2>
+                                <div class="post-tags">
+                                    ${post.tags.map(tag => `<span class="post-tag">${tag}</span>`).join('')}
+                                </div>
+                                <p class="post-excerpt">${excerpt}</p>
+                                <div class="post-meta">
+                                    <span class="post-date">${formattedDate}</span>
+                                    <div class="post-stats">
+                                        <span>👁️ ${post.views || 0}</span>
+                                        <span>❤️ ${post.likes || 0}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // 添加点击事件，跳转到文章详情页
+                        postCard.addEventListener('click', () => {
+                            window.location.href = `./post.html?id=${post.id}`;
+                        });
+                        
+                        // 添加到容器
+                        blogPostsContainer.appendChild(postCard);
+                    });
+
+                    // 渲染分页
+                    renderPagination(totalPages);
+                } catch (error) {
+                    console.error('加载文章失败:', error);
+                    blogPostsContainer.innerHTML = `<div class="no-posts">加载文章失败: ${error.message}</div>`;
+                }
+            }
+
+            // 渲染分页
+            function renderPagination(totalPages) {
+                paginationContainer.innerHTML = '';
+                
+                if (totalPages <= 1) return;
+
+                // 上一页按钮
+                const prevButton = document.createElement('button');
+                prevButton.textContent = '上一页';
+                prevButton.disabled = currentPage === 1;
+                prevButton.addEventListener('click', () => {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        loadPosts();
+                    }
+                });
+                paginationContainer.appendChild(prevButton);
+
+                // 页码按钮
+                for (let i = 1; i <= totalPages; i++) {
+                    const pageButton = document.createElement('button');
+                    pageButton.textContent = i;
+                    pageButton.className = i === currentPage ? 'active' : '';
+                    pageButton.addEventListener('click', () => {
+                        currentPage = i;
+                        loadPosts();
+                    });
+                    paginationContainer.appendChild(pageButton);
+                }
+
+                // 下一页按钮
+                const nextButton = document.createElement('button');
+                nextButton.textContent = '下一页';
+                nextButton.disabled = currentPage === totalPages;
+                nextButton.addEventListener('click', () => {
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        loadPosts();
+                    }
+                });
+                paginationContainer.appendChild(nextButton);
+            }
+
+            // 创建文章
+            function createPost(event) {
+                event.preventDefault();
+                
+                if (!authService.isLoggedIn()) {
+                    alert('请先登录');
+                    loginModal.style.display = 'flex';
+                    return;
+                }
+                
+                const title = document.getElementById('postTitle').value;
+                const content = document.getElementById('postContent').value;
+                const coverImage = document.getElementById('postCover').value;
+                const tagsInput = document.getElementById('postTags').value;
+                const tags = tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag);
+                
+                try {
+                    blogService.createPost({
+                        title,
+                        content,
+                        coverImage,
+                        tags
+                    });
+                    
+                    // 重置表单
+                    postForm.reset();
+                    
+                    // 关闭模态框
+                    createPostModal.style.display = 'none';
+                    
+                    // 重新加载文章
+                    currentPage = 1;
+                    loadPosts();
+                    
+                    alert('文章发布成功！');
+                } catch (error) {
+                    alert(`发布失败: ${error.message}`);
+                }
+            }
+
+            // 初始化认证状态
+            function initAuthState() {
+                if (authService.isLoggedIn()) {
+                    const user = authService.getCurrentUser();
+                    userAvatar.src = user.avatar;
+                    userAvatar.alt = user.username;
+                    loginBtn.style.display = 'none';
+                    userMenu.style.display = 'flex';
+                } else {
+                    loginBtn.style.display = 'flex';
+                    userMenu.style.display = 'none';
+                }
+            }
+
+            // 登录函数
+            function login(event) {
+                event.preventDefault();
+                
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                
+                try {
+                    authService.login(username, password);
+                    loginModal.style.display = 'none';
+                    initAuthState();
+                    alert('登录成功！');
+                } catch (error) {
+                    alert(`登录失败: ${error.message}`);
+                }
+            }
+
+            // 注册函数
+            function register(event) {
+                event.preventDefault();
+                
+                const username = document.getElementById('regUsername').value;
+                const email = document.getElementById('regEmail').value;
+                const password = document.getElementById('regPassword').value;
+                const confirmPassword = document.getElementById('regConfirmPassword').value;
+                
+                try {
+                    authService.register({
+                        username,
+                        email,
+                        password,
+                        confirmPassword
+                    });
+                    registerModal.style.display = 'none';
+                    initAuthState();
+                    alert('注册成功！');
+                } catch (error) {
+                    alert(`注册失败: ${error.message}`);
+                }
+            }
+
+            // 事件监听
+            createPostBtn.addEventListener('click', () => {
+                if (!authService.isLoggedIn()) {
+                    alert('请先登录');
+                    loginModal.style.display = 'flex';
+                    return;
+                }
+                createPostModal.style.display = 'flex';
+            });
+
+            closePostModal.addEventListener('click', () => {
+                createPostModal.style.display = 'none';
+            });
+
+            postForm.addEventListener('submit', createPost);
+
+            loginBtn.addEventListener('click', () => {
+                loginModal.style.display = 'flex';
+            });
+
+            closeLoginModal.addEventListener('click', () => {
+                loginModal.style.display = 'none';
+            });
+
+            closeRegisterModal.addEventListener('click', () => {
+                registerModal.style.display = 'none';
+            });
+
+            showRegister.addEventListener('click', () => {
+                loginModal.style.display = 'none';
+                registerModal.style.display = 'flex';
+            });
+
+            showLogin.addEventListener('click', () => {
+                registerModal.style.display = 'none';
+                loginModal.style.display = 'flex';
+            });
+
+            loginForm.addEventListener('submit', login);
+            registerForm.addEventListener('submit', register);
+
+            logoutBtn.addEventListener('click', () => {
+                authService.logout();
+                initAuthState();
+                alert('已成功退出登录');
+            });
+
+            // 游戏菜单交互
+            let isGamesMenuVisible = false;
+            gamesBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                isGamesMenuVisible = !isGamesMenuVisible;
+                gamesMenu.style.display = isGamesMenuVisible ? 'block' : 'none';
+            });
+
+            // 点击其他地方关闭各种模态框和菜单
+            window.addEventListener('click', (e) => {
+                if (e.target === createPostModal) {
+                    createPostModal.style.display = 'none';
+                }
+                if (e.target === loginModal) {
+                    loginModal.style.display = 'none';
+                }
+                if (e.target === registerModal) {
+                    registerModal.style.display = 'none';
+                }
+                if (!gamesBtn.contains(e.target) && !gamesMenu.contains(e.target)) {
+                    gamesMenu.style.display = 'none';
+                    isGamesMenuVisible = false;
+                }
+            });
+
+            // 初始化
+            initAuthState();
+            loadPosts();
+        });
+    </script>
+</body>
+</html>

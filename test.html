@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API测试页面</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #ff7eb6;
+            text-align: center;
+        }
+        .test-card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(255, 158, 205, 0.3);
+            margin-bottom: 20px;
+        }
+        button {
+            background: linear-gradient(135deg, #ffd1d1, #ff9ecd);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-right: 10px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        #result {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            min-height: 100px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>API测试页面</h1>
+    
+    <div class="test-card">
+        <h2>测试服务器连接</h2>
+        <button id="testRoot">测试根路径</button>
+        <button id="testApi">测试API路径</button>
+        <button id="checkStatus">检查服务器状态</button>
+        
+        <div id="result">结果将显示在这里...</div>
+    </div>
+
+    <script>
+        // 基础URL
+        const BASE_URL = 'http://localhost:5000';
+        
+        // 测试根路径
+        document.getElementById('testRoot').addEventListener('click', async () => {
+            try {
+                const response = await fetch(BASE_URL + '/');
+                const data = await response.json();
+                document.getElementById('result').textContent = 
+                    '状态: ' + (response.ok ? '成功' : '失败') + 
+                    '\n状态码: ' + response.status +
+                    '\n返回数据: ' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('result').textContent = '错误: ' + error.message;
+            }
+        });
+        
+        // 测试API路径
+        document.getElementById('testApi').addEventListener('click', async () => {
+            try {
+                const response = await fetch(BASE_URL + '/api/test');
+                const data = await response.json();
+                document.getElementById('result').textContent = 
+                    '状态: ' + (response.ok ? '成功' : '失败') + 
+                    '\n状态码: ' + response.status +
+                    '\n返回数据: ' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('result').textContent = '错误: ' + error.message;
+            }
+        });
+
+        // 检查服务器状态
+        document.getElementById('checkStatus').addEventListener('click', async () => {
+            try {
+                const response = await fetch(BASE_URL, { 
+                    method: 'HEAD',
+                    mode: 'no-cors'
+                });
+                document.getElementById('result').textContent = 
+                    '服务器状态: ' + (response.type === 'opaque' ? '服务器运行中' : '状态未知') +
+                    '\n备注: no-cors 模式下无法读取详细状态';
+            } catch (error) {
+                document.getElementById('result').textContent = '错误: 服务器未响应或CORS问题\n' + error.message;
+            }
+        });
+    </script>
+</body>
+</html>
