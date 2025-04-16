@@ -65,6 +65,45 @@ const routes = [
     }
   },
   {
+    path: '/articles',
+    name: 'Articles',
+    component: () => import('@/views/ArticleList.vue'),
+    meta: { title: '文章列表' }
+  },
+  {
+    path: '/article/:id',
+    name: 'ArticleDetail',
+    component: () => import('@/views/ArticleDetail.vue'),
+    meta: { title: '文章详情' }
+  },
+  {
+    path: '/article/create',
+    name: 'ArticleCreate',
+    component: () => import('@/views/ArticleEdit.vue'),
+    meta: {
+      title: '创建文章',
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/article/edit/:id',
+    name: 'ArticleEdit',
+    component: () => import('@/views/ArticleEdit.vue'),
+    meta: {
+      title: '编辑文章',
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: () => import('@/views/SettingsView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: '设置'
+    }
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: NotFoundView

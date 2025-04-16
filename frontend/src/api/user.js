@@ -1,10 +1,6 @@
 import request from '@/utils/request'
 
-/**
- * 用户注册
- * @param {Object} data - 注册数据
- * @returns {Promise}
- */
+// 用户注册
 export function register(data) {
   return request({
     url: '/auth/register',
@@ -13,11 +9,7 @@ export function register(data) {
   })
 }
 
-/**
- * 用户登录
- * @param {Object} data - 登录数据
- * @returns {Promise}
- */
+// 用户登录
 export function login(data) {
   return request({
     url: '/auth/login',
@@ -26,46 +18,33 @@ export function login(data) {
   })
 }
 
-/**
- * 获取当前用户信息
- * @returns {Promise}
- */
-export function getInfo() {
+// 获取当前用户信息
+export function getCurrentUser() {
   return request({
-    url: '/auth/profile',
+    url: '/user/me',
     method: 'get'
   })
 }
 
-/**
- * 更新用户个人资料
- * @param {Object} data - 用户资料数据
- * @returns {Promise}
- */
-export function updateProfile(data) {
+// 更新用户个人信息
+export function updateUserProfile(data) {
   return request({
-    url: '/auth/profile',
+    url: '/user/profile',
     method: 'put',
     data
   })
 }
 
-/**
- * 用户登出
- * @returns {Promise}
- */
-export function logout() {
+// 更新用户密码
+export function updateUserPassword(data) {
   return request({
-    url: '/auth/logout',
-    method: 'post'
+    url: '/user/password',
+    method: 'put',
+    data
   })
 }
 
-/**
- * 重置密码
- * @param {Object} data - 重置密码数据
- * @returns {Promise}
- */
+// 重置密码
 export function resetPassword(data) {
   return request({
     url: '/auth/reset-password',
@@ -74,12 +53,8 @@ export function resetPassword(data) {
   })
 }
 
-/**
- * 发送密码重置邮件
- * @param {Object} data - 包含用户邮箱
- * @returns {Promise}
- */
-export function forgotPassword(data) {
+// 发送重置密码邮件
+export function sendResetPasswordEmail(data) {
   return request({
     url: '/auth/forgot-password',
     method: 'post',
@@ -87,18 +62,11 @@ export function forgotPassword(data) {
   })
 }
 
-/**
- * 更新用户头像
- * @param {FormData} data - 包含头像文件的FormData
- * @returns {Promise}
- */
-export function updateAvatar(data) {
+// 更新用户头像
+export function updateUserAvatar(data) {
   return request({
-    url: '/auth/avatar',
-    method: 'post',
-    data,
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
+    url: '/user/avatar',
+    method: 'put',
+    data
   })
-} 
+}

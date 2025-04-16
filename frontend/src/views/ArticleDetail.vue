@@ -114,7 +114,7 @@ import { getArticle, deleteArticle, likeArticle, unlikeArticle, favoriteArticle,
 import { formatDistanceToNow } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import { marked } from 'marked'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 
 export default {
   name: 'ArticleDetail',

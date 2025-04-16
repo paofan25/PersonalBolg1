@@ -19,5 +19,5 @@ app.use(router);
 
 // 初始化认证状态
 store.dispatch('auth/initAuth').finally(() => {
-app.mount('#app');
+    app.mount('#app');
 });
