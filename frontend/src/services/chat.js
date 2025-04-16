@@ -4,6 +4,10 @@ import xfyunService from './xfyun';
 class ChatService {
   constructor() {
     this.messages = [];
+    // 天气查询正则表达式
+    this.weatherRegex = /^(.+?)天气$/;
+    // 本地天气关键词
+    this.localWeatherKeywords = ['这里', '当前', '本地', '这儿'];
   }
 
   // 分析用户输入的情绪
@@ -27,21 +31,61 @@ class ChatService {
     }
   }
 
+  // 处理天气查询
+  async handleWeatherQuery(text) {
+    try {
+      console.log('处理天气查询:', text);
+      
+      let weatherData;
+      let cityName;
+
+      // 检查是否是查询本地天气
+      if (this.isLocalWeatherQuery(text)) {
+        console.log('查询本地天气');
+        weatherData = await weatherService.getLocationWeather();
+        cityName = weatherData.cityName;
+      } else {
+        // 尝试匹配城市名
+        const match = text.match(this.weatherRegex);
+        if (match) {
+          cityName = match[1];
+          console.log('查询指定城市天气:', cityName);
+          weatherData = await weatherService.getCityWeather(cityName);
+        } else {
+          throw new Error('无法识别城市名');
+        }
+      }
+
+      // 生成天气描述
+      const description = weatherService.generateWeatherDescription(weatherData);
+      
+      return {
+        type: 'weather',
+        text: description,
+        data: weatherData
+      };
+    } catch (error) {
+      console.error('天气查询失败:', error);
+      return {
+        type: 'error',
+        text: error.message || '抱歉，获取天气信息失败了...'
+      };
+    }
+  }
+
+  // 检查是否是本地天气查询
+  isLocalWeatherQuery(text) {
+    return this.localWeatherKeywords.some(keyword => text.includes(keyword));
+  }
+
   // 生成回复
   async generateResponse(text, emotion) {
     try {
       console.log('开始生成回复:', { text, emotion });
       
-      // 检查是否是天气相关询问
+      // 首先检查是否是天气查询
       if (this.isWeatherQuery(text)) {
-        const weather = await weatherService.getNowWeather('auto_ip');
-        if (weather) {
-          return {
-            text: weatherService.generateWeatherDescription(weather),
-            weather,
-            actions: []
-          };
-        }
+        return await this.handleWeatherQuery(text);
       }
 
       // 使用讯飞API生成回复
@@ -62,12 +106,14 @@ class ChatService {
       const actions = this.generateActions(emotion);
 
       return {
+        type: 'chat',
         text: response,
         actions
       };
     } catch (error) {
       console.error('生成回复失败:', error);
       return {
+        type: 'error',
         text: '啊哦，我好像遇到了一点小问题... (｡•́︿•̀｡)',
         actions: []
       };
@@ -76,8 +122,8 @@ class ChatService {
 
   // 检查是否是天气相关询问
   isWeatherQuery(text) {
-    const weatherKeywords = ['天气', '下雨', '温度', '冷', '热', '气温', '预报'];
-    return weatherKeywords.some(keyword => text.includes(keyword));
+    return this.weatherRegex.test(text) || 
+           this.localWeatherKeywords.some(keyword => text.includes(keyword) && text.includes('天气'));
   }
 
   // 根据情绪生成互动动作

@@ -1,82 +1,144 @@
-import { authAPI } from '@/api'
+import { login, logout, getInfo } from '@/api/user'
+import { getToken, setToken, removeToken } from '@/utils/auth'
 
 // 初始状态
 const state = {
-  token: localStorage.getItem('token') || null,
-  user: JSON.parse(localStorage.getItem('user')) || null
+  token: getToken(),
+  user: null,
+  loading: false,
+  error: null
 }
 
 // getters
 const getters = {
   isLoggedIn: state => !!state.token,
   currentUser: state => state.user,
-  isAdmin: state => state.user && state.user.role === 'admin'
+  isLoading: state => state.loading,
+  authError: state => state.error
 }
 
 // mutations
 const mutations = {
-  SET_AUTH(state, { token, user }) {
+  SET_TOKEN(state, token) {
     state.token = token
+  },
+  SET_USER(state, user) {
     state.user = user
-    localStorage.setItem('token', token)
-    localStorage.setItem('user', JSON.stringify(user))
+  },
+  SET_LOADING(state, loading) {
+    state.loading = loading
+  },
+  SET_ERROR(state, error) {
+    state.error = error
   },
   CLEAR_AUTH(state) {
     state.token = null
     state.user = null
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    state.error = null
+    removeToken()
   }
 }
 
 // actions
 const actions = {
-  async login({ commit }, { username, password }) {
+  // 用户登录
+  async login({ commit, dispatch }, userInfo) {
     try {
-      const response = await authAPI.login(username, password)
-      const { token, user } = response.data
-      commit('SET_AUTH', { token, user })
-      return user
+      commit('SET_LOADING', true)
+      commit('SET_ERROR', null)
+      
+      const { data } = await login(userInfo)
+      
+      commit('SET_TOKEN', data.token)
+      setToken(data.token)
+      
+      // 获取用户信息
+      await dispatch('getInfo')
+      
+      return data
     } catch (error) {
+      commit('SET_ERROR', error.message || '登录失败')
+      throw error
+    } finally {
+      commit('SET_LOADING', false)
+    }
+  },
+
+  // 获取用户信息
+  async getInfo({ commit, state }) {
+    try {
+      const { data } = await getInfo(state.token)
+      commit('SET_USER', data)
+      return data
+    } catch (error) {
+      commit('SET_ERROR', error.message)
       throw error
     }
   },
-  
-  async register({ commit }, userData) {
+
+  // 用户登出
+  async logout({ commit }) {
     try {
-      const response = await authAPI.register(userData)
-      const { token, user } = response.data
-      commit('SET_AUTH', { token, user })
-      return user
+      await logout()
+      commit('CLEAR_AUTH')
     } catch (error) {
+      console.error('登出失败:', error)
+      // 即使请求失败，也清除本地状态
+      commit('CLEAR_AUTH')
       throw error
     }
   },
-  
-  async getProfile({ commit }) {
-    try {
-      const response = await authAPI.getProfile()
-      const user = response.data
-      commit('SET_AUTH', { token: state.token, user })
-      return user
-    } catch (error) {
-      throw error
-    }
-  },
-  
-  async updateProfile({ commit }, userData) {
-    try {
-      const response = await authAPI.updateProfile(userData)
-      const user = response.data
-      commit('SET_AUTH', { token: state.token, user })
-      return user
-    } catch (error) {
-      throw error
-    }
-  },
-  
-  logout({ commit }) {
+
+  // 清除认证状态
+  resetToken({ commit }) {
     commit('CLEAR_AUTH')
+  },
+  
+  async register({ commit }, { username, email, password }) {
+    try {
+      commit('SET_LOADING', true)
+      commit('SET_ERROR', null)
+      
+      const { token, user } = await authApi.register(username, email, password)
+      
+      commit('SET_TOKEN', token)
+      commit('SET_USER', user)
+      
+      return user
+    } catch (error) {
+      commit('SET_ERROR', error.message)
+      throw error
+    } finally {
+      commit('SET_LOADING', false)
+    }
+  },
+  
+  async fetchUserProfile({ commit }) {
+    try {
+      commit('SET_LOADING', true)
+      const user = await authApi.getProfile()
+      commit('SET_USER', user)
+      return user
+    } catch (error) {
+      commit('SET_ERROR', error.message)
+      throw error
+    } finally {
+      commit('SET_LOADING', false)
+    }
+  },
+  
+  async updateProfile({ commit }, profileData) {
+    try {
+      commit('SET_LOADING', true)
+      const updatedUser = await authApi.updateProfile(profileData)
+      commit('SET_USER', updatedUser)
+      return updatedUser
+    } catch (error) {
+      commit('SET_ERROR', error.message)
+      throw error
+    } finally {
+      commit('SET_LOADING', false)
+    }
   }
 }
 

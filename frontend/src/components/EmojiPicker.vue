@@ -168,7 +168,7 @@ export default {
 <style scoped>
 .emoji-picker {
   position: absolute;
-  width: 300px;
+  width: 360px;
   background: white;
   border-radius: var(--border-radius);
   box-shadow: var(--shadow-lg);

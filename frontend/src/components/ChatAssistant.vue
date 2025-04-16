@@ -1,2 +1,163 @@
-class WeatherService {\n  constructor() {\n    // 使用正确的API KEY和域名\n    this.key = '20ad4f9133c94ac69f48192ef755f473';\n    this.baseUrl = 'https://kv436fwcq8.re.qweatherapi.com/v7';\n    \n    // 默认城市列表\n    this.defaultCities = [\n      { id: '101190101', name: '南京' },\n      { id: '101020100', name: '上海' },\n      { id: '101010100', name: '北京' }\n    ];\n\n    console.log('WeatherService initialized with custom domain');\n  }\n\n  // 获取当前天气\n  async getNowWeather() {\n    try {\n      // 使用默认城市（南京）\n      const defaultCity = this.defaultCities[0];\n      console.log('使用默认城市:', defaultCity.name);\n\n      const url = `${this.baseUrl}/weather/now?location=${defaultCity.id}&key=${this.key}`;\n      console.log('请求天气URL:', url);\n      \n      const weatherResponse = await fetch(url, {\n        headers: {\n          'Accept': 'application/json',\n          'Accept-Encoding': 'gzip'\n        }\n      });\n      \n      if (!weatherResponse.ok) {\n        throw new Error(`HTTP error! status: ${weatherResponse.status}`);\n      }\n      \n      const weatherData = await weatherResponse.json();\n      console.log('天气信息响应:', weatherData);\n\n      if (weatherData.code === '200') {\n        const { temp, text, icon } = weatherData.now;\n        return {\n          temperature: temp,\n          condition: this.getWeatherCondition(icon),\n          description: text,\n          cityName: defaultCity.name,\n          updateTime: weatherData.updateTime\n        };\n      } else {\n        console.error('获取天气失败:', weatherData);\n        return this.getDefaultWeather();\n      }\n    } catch (error) {\n      console.error('获取天气出错:', error);\n      return this.getDefaultWeather();\n    }\n  }\n\n  // 生成天气描述\n  generateWeatherDescription(weather) {\n    const { temperature, description, cityName } = weather;\n    let suggestion = '';\n\n    // 根据温度给出建议\n    const temp = parseInt(temperature);\n    if (temp < 10) {\n      suggestion = '天气有点冷，要注意保暖哦~ 🧥';\n    } else if (temp > 30) {\n      suggestion = '天气有点热，记得防晒补水哦~ 🌞';\n    } else {\n      suggestion = '天气很舒适，适合出门活动呢~ 🌈';\n    }\n\n    // 根据天气状况添加特定建议\n    if (description.includes('雨')) {\n      suggestion += ' 记得带伞！☔';\n    } else if (description.includes('晴')) {\n      suggestion += ' 防晒要做好！🧴';\n    }\n\n    return `${cityName}现在气温${temperature}°C，${description}。${suggestion}`;\n  }\n\n  // 获取天气状况\n  getWeatherCondition(icon) {\n    const conditions = {\n      sunny: ['100', '101', '102', '103'],\n      cloudy: ['104', '150', '151', '152', '153'],\n      rainy: ['300', '301', '302', '303', '304', '305', '306', '307', '308', '309', '310', '311', '312', '313', '314', '315', '316', '317', '318', '399'],\n      snowy: ['400', '401', '402', '403', '404', '405', '406', '407', '408', '409', '410', '499'],\n      foggy: ['500', '501', '502', '503', '504', '507', '508', '509', '510', '511', '512', '513', '514', '515']\n    };\n\n    for (const [condition, icons] of Object.entries(conditions)) {\n      if (icons.includes(icon)) {\n        return condition;\n      }\n    }\n    return 'cloudy'; // 默认返回多云\n  }\n\n  // 获取默认天气数据\n  getDefaultWeather() {\n    const defaultCity = this.defaultCities[0];\n    return {\n      temperature: 25,\n      condition: 'cloudy',\n      description: '多云',\n      cityName: defaultCity.name,\n      updateTime: new Date().toISOString()\n    };\n  }\n\n  // 切换城市\n  async switchCity(cityId) {\n    try {\n      const url = `${this.baseUrl}/weather/now?location=${cityId}&key=${this.key}`;\n      console.log('正在获取天气信息...');\n      \n      const weatherResponse = await fetch(url, {\n        headers: {\n          'Accept': 'application/json',\n          'Accept-Encoding': 'gzip'\n        }\n      });\n      \n      if (!weatherResponse.ok) {\n        throw new Error(`HTTP error! status: ${weatherResponse.status}`);\n      }\n      \n      const weatherData = await weatherResponse.json();\n      console.log('切换城市天气响应:', weatherData);\n\n      if (weatherData.code === '200') {\n        const { temp, text, icon } = weatherData.now;\n        const city = this.defaultCities.find(c => c.id === cityId) || { name: '未知城市' };\n        return {\n          temperature: temp,\n          condition: this.getWeatherCondition(icon),\n          description: text,\n          cityName: city.name,\n          updateTime: weatherData.updateTime\n        };\n      } else {\n        console.error('获取天气失败:', weatherData);\n        return this.getDefaultWeather();\n      }\n    } catch (error) {\n      console.error('切换城市出错:', error);\n      return this.getDefaultWeather();\n    }\n  }\n\n  // 解析城市名称\n  parseCityName(text) {\n    for (const city of this.defaultCities) {\n      if (text.includes(city.name)) {\n        return city;\n      }\n    }\n    return null;\n  }\n}\n\nexport default new WeatherService();"
+<template>
+  <div class="chat-container">
+    <!-- ... 其他现有代码 ... -->
+    
+    <div class="input-area">
+      <div class="input-wrapper">
+        <input 
+          type="text" 
+          v-model="inputMessage" 
+          @keyup.enter="sendMessage"
+          placeholder="和糖球聊天吧~"
+          class="chat-input"
+        >
+        <div class="input-actions">
+          <button class="emoji-trigger" @click.stop="toggleEmojiPicker">
+            😊
+          </button>
+          <button class="send-btn" @click="sendMessage" :disabled="!inputMessage.trim()">
+            发送
+          </button>
+        </div>
+      </div>
+      <EmojiPicker
+        v-if="showEmojiPicker"
+        :is-visible="showEmojiPicker"
+        @select="insertEmoji"
+        @close="showEmojiPicker = false"
+      />
+    </div>
+  </div>
+</template>
+
+<script>
+import EmojiPicker from './EmojiPicker.vue'
+
+export default {
+  name: 'ChatAssistant',
+  components: {
+    EmojiPicker
+  },
+  data() {
+    return {
+      // ... 其他现有数据 ...
+      showEmojiPicker: false,
+      inputMessage: ''
+    }
+  },
+  methods: {
+    // ... 其他现有方法 ...
+    
+    toggleEmojiPicker() {
+      this.showEmojiPicker = !this.showEmojiPicker;
+    },
+    
+    insertEmoji(emoji) {
+      const textarea = this.$refs.messageInput;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      this.inputMessage = this.inputMessage.substring(0, start) + emoji + this.inputMessage.substring(end);
+      this.$nextTick(() => {
+        textarea.focus();
+        const newCursor = start + emoji.length;
+        textarea.setSelectionRange(newCursor, newCursor);
+      });
+    }
+  },
+  directives: {
+    'click-outside': {
+      mounted(el, binding) {
+        el.clickOutsideEvent = function(event) {
+          if (!(el === event.target || el.contains(event.target))) {
+            binding.value(event);
+          }
+        };
+        document.addEventListener('click', el.clickOutsideEvent);
+      },
+      unmounted(el) {
+        document.removeEventListener('click', el.clickOutsideEvent);
+      }
+    }
+  }
 }
+</script>
+
+<style scoped>
+/* ... 其他现有样式 ... */
+
+.input-area {
+  position: relative;
+  padding: 16px;
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-color);
+}
+
+.input-wrapper {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 8px;
+}
+
+textarea {
+  flex: 1;
+  border: none;
+  background: none;
+  resize: none;
+  padding: 8px;
+  font-size: 1em;
+  line-height: 1.5;
+  color: var(--text-primary);
+  min-height: 24px;
+  max-height: 120px;
+}
+
+textarea:focus {
+  outline: none;
+}
+
+.input-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.emoji-trigger {
+  background: none;
+  border: none;
+  padding: 6px;
+  font-size: 1.2em;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.emoji-trigger:hover {
+  background: var(--bg-hover);
+  transform: scale(1.1);
+}
+
+.send-btn {
+  background: var(--primary-gradient);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.send-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.send-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+</style>

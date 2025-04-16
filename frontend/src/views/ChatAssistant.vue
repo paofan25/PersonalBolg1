@@ -66,23 +66,34 @@
 
     <!-- 输入区域 -->
     <div class="chat-input sweet-card">
-      <textarea v-model="inputText"
-                @keyup.enter.exact="sendMessage"
-                placeholder="和糖球说说话吧..."
-                :disabled="isTyping"
-                ref="inputArea"></textarea>
-      <div class="input-actions">
-        <div class="emoji-picker-wrapper">
-          <button class="emoji-btn" @click="emojiPickerVisible = !emojiPickerVisible">
-            <span class="emoji-icon">😊</span>
+      <div class="input-wrapper">
+        <textarea 
+          v-model="inputText"
+          @keyup.enter.exact="sendMessage"
+          placeholder="和糖球说说话吧..."
+          :disabled="isTyping"
+          ref="inputArea"
+        ></textarea>
+        <div class="input-actions">
+          <div class="emoji-picker-wrapper" v-click-outside="closeEmojiPicker">
+            <button class="emoji-btn" @click.stop="toggleEmojiPicker">
+              <span class="emoji-icon">😊</span>
+            </button>
+            <EmojiPicker
+              v-if="emojiPickerVisible"
+              :visible="emojiPickerVisible"
+              :position="{ bottom: '100%', left: '0' }"
+              @select="onEmojiSelect"
+            />
+          </div>
+          <button 
+            class="send-btn"
+            :disabled="!inputText.trim() || isTyping"
+            @click="sendMessage"
+          >
+            发送
           </button>
-          <!-- 表情选择器组件占位符 -->
         </div>
-        <button class="send-btn"
-                :disabled="!inputText.trim() || isTyping"
-                @click="sendMessage">
-          发送
-        </button>
       </div>
     </div>
   </div>
@@ -91,11 +102,12 @@
 <script>
 import { computed, ref, onMounted, nextTick, watch } from 'vue';
 import { useStore } from 'vuex';
+import EmojiPicker from '../components/EmojiPicker.vue';
 
 export default {
   name: 'ChatAssistant',
   components: {
-    // 暂时移除表情选择器组件
+    EmojiPicker
   },
   setup() {
     const store = useStore();
@@ -189,10 +201,16 @@ export default {
       return labels[`${action.type}-${action.name || action.sound}`] || '互动';
     };
     
-    // 插入表情符号
-    const insertEmoji = (emoji) => {
-      if (!emoji) return;
-      
+    // 表情选择器相关方法
+    const toggleEmojiPicker = () => {
+      emojiPickerVisible.value = !emojiPickerVisible.value;
+    };
+
+    const closeEmojiPicker = () => {
+      emojiPickerVisible.value = false;
+    };
+
+    const onEmojiSelect = (emoji) => {
       const textarea = inputArea.value;
       if (textarea) {
         const start = textarea.selectionStart;
@@ -200,7 +218,8 @@ export default {
         inputText.value = inputText.value.substring(0, start) + emoji.char + inputText.value.substring(end);
         nextTick(() => {
           textarea.focus();
-          textarea.selectionStart = textarea.selectionEnd = start + emoji.char.length;
+          const newCursor = start + emoji.char.length;
+          textarea.selectionStart = textarea.selectionEnd = newCursor;
         });
       }
       emojiPickerVisible.value = false;
@@ -226,8 +245,25 @@ export default {
       scrollToBottom,
       handleAction,
       getActionLabel,
-      insertEmoji
+      toggleEmojiPicker,
+      closeEmojiPicker,
+      onEmojiSelect
     };
+  },
+  directives: {
+    'click-outside': {
+      mounted(el, binding) {
+        el.clickOutsideEvent = function(event) {
+          if (!(el === event.target || el.contains(event.target))) {
+            binding.value(event);
+          }
+        };
+        document.addEventListener('click', el.clickOutsideEvent);
+      },
+      unmounted(el) {
+        document.removeEventListener('click', el.clickOutsideEvent);
+      }
+    }
   }
 };
 </script>
@@ -405,6 +441,10 @@ export default {
   padding: 15px;
 }
 
+.input-wrapper {
+  position: relative;
+}
+
 textarea {
   width: 100%;
   height: 80px;
@@ -427,33 +467,57 @@ textarea:focus {
   align-items: center;
 }
 
-.emoji-btn, .send-btn {
-  padding: 8px 15px;
-  border: none;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.3s ease;
+.emoji-picker-wrapper {
+  position: relative;
 }
 
 .emoji-btn {
   background: none;
-  font-size: 1.2rem;
+  border: none;
+  padding: 8px;
+  font-size: 1.2em;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.emoji-btn:hover {
+  background: var(--bg-secondary);
+  transform: scale(1.1);
+}
+
+.emoji-icon {
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.emoji-btn:hover .emoji-icon {
+  transform: scale(1.2);
 }
 
 .send-btn {
   background: var(--primary-purple, #7b68ee);
   color: white;
+  padding: 8px 20px;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(123, 104, 238, 0.3);
 }
 
 .send-btn:hover {
   background: var(--primary-pink, #ff69b4);
   transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(255, 105, 180, 0.4);
 }
 
 .send-btn:disabled {
   background: #ccc;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 /* 动画 */

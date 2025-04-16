@@ -1,46 +1,45 @@
 import CryptoJS from 'crypto-js';
 
+// 配置信息
+const CONFIG = {
+  appid: 'bb840282',
+  apiKey: '178baf6c846eaeb5ea632cdab055b9cd',
+  apiSecret: 'YjMzMmE3NzczOWExZjQ3ZWI1NWY3OWJi',
+  domain: 'lite',
+  url: 'wss://spark-api.xf-yun.com/v1.1/chat'
+};
+
 class XfyunService {
   constructor() {
-    // 检查环境变量
-    if (typeof import.meta.env === 'undefined') {
-      console.error('环境变量未正确加载');
-    }
-
-    // 使用环境变量
-    this.appid = import.meta.env?.VITE_APP_XFYUN_APPID;
-    this.apiKey = import.meta.env?.VITE_APP_XFYUN_API_KEY;
-    this.apiSecret = import.meta.env?.VITE_APP_XFYUN_API_SECRET;
-
-    if (!this.appid || !this.apiKey || !this.apiSecret) {
-      console.error('讯飞服务配置缺失，使用默认值');
-      // 使用默认值作为后备
-      this.appid = 'bb840282';
-      this.apiKey = '178baf6c846eaeb5ea632cdab055b9cd';
-      this.apiSecret = 'YjMzMmE3NzczOWExZjQ3ZWI1NWY3OWJi';
-    }
+    // 尝试从环境变量获取配置
+    this.appid = process.env.VUE_APP_XFYUN_APPID || CONFIG.appid;
+    this.apiKey = process.env.VUE_APP_XFYUN_API_KEY || CONFIG.apiKey;
+    this.apiSecret = process.env.VUE_APP_XFYUN_API_SECRET || CONFIG.apiSecret;
+    this.domain = CONFIG.domain;
+    this.url = CONFIG.url;
 
     console.log('XfyunService initialized with:', {
       appid: this.appid,
       apiKey: this.apiKey?.substring(0, 10) + '...',
       hasSecret: !!this.apiSecret
     });
-
-    // 使用 Spark Lite 版本
-    this.domain = 'lite';
-    this.url = 'wss://spark-api.xf-yun.com/v1.1/chat';
   }
 
   // 生成鉴权url
   getAuthUrl() {
-    const host = 'spark-api.xf-yun.com/v1.1/chat';
-    const date = new Date().toUTCString();
-    const signatureOrigin = `host: ${host}\ndate: ${date}\nGET /v1.1/chat HTTP/1.1`;
-    const signatureSha = CryptoJS.HmacSHA256(signatureOrigin, this.apiSecret);
-    const signature = CryptoJS.enc.Base64.stringify(signatureSha);
-    const authorizationOrigin = `api_key="${this.apiKey}", algorithm="hmac-sha256", headers="host date request-line", signature="${signature}"`;
-    const authorization = btoa(authorizationOrigin);
-    return `${this.url}?authorization=${authorization}&date=${date}&host=${host}`;
+    try {
+      const host = 'spark-api.xf-yun.com/v1.1/chat';
+      const date = new Date().toUTCString();
+      const signatureOrigin = `host: ${host}\ndate: ${date}\nGET /v1.1/chat HTTP/1.1`;
+      const signatureSha = CryptoJS.HmacSHA256(signatureOrigin, this.apiSecret);
+      const signature = CryptoJS.enc.Base64.stringify(signatureSha);
+      const authorizationOrigin = `api_key="${this.apiKey}", algorithm="hmac-sha256", headers="host date request-line", signature="${signature}"`;
+      const authorization = btoa(authorizationOrigin);
+      return `${this.url}?authorization=${authorization}&date=${date}&host=${host}`;
+    } catch (error) {
+      console.error('生成鉴权URL失败:', error);
+      throw new Error('生成鉴权URL失败');
+    }
   }
 
   // 建立WebSocket连接
@@ -51,27 +50,47 @@ class XfyunService {
         console.log('Creating WebSocket connection...');
         const ws = new WebSocket(url);
         
+        let connectionTimeout = setTimeout(() => {
+          ws.close();
+          reject(new Error('WebSocket连接超时'));
+        }, 10000);
+        
         ws.onopen = () => {
           console.log('WebSocket连接已建立');
+          clearTimeout(connectionTimeout);
           resolve(ws);
         };
         
         ws.onerror = (error) => {
           console.error('WebSocket连接错误:', error);
-          reject(error);
+          clearTimeout(connectionTimeout);
+          reject(new Error('WebSocket连接失败'));
         };
 
         ws.onclose = (event) => {
           console.log('WebSocket连接关闭:', event);
+          clearTimeout(connectionTimeout);
         };
       } catch (error) {
         console.error('创建WebSocket失败:', error);
-        reject(error);
+        reject(new Error('创建WebSocket失败'));
       }
     });
   }
 
   // 发送消息并获取回复
+  async sendMessage(text) {
+    try {
+      console.log('Sending message:', text);
+      const messages = [{ role: 'user', content: text }];
+      return await this.chat(messages);
+    } catch (error) {
+      console.error('发送消息失败:', error);
+      throw error;
+    }
+  }
+
+  // 聊天核心方法
   async chat(messages) {
     try {
       console.log('Starting chat with messages:', messages);
@@ -79,9 +98,19 @@ class XfyunService {
       
       return new Promise((resolve, reject) => {
         let responseText = '';
+        let messageTimeout;
+        
+        const resetMessageTimeout = () => {
+          clearTimeout(messageTimeout);
+          messageTimeout = setTimeout(() => {
+            ws.close();
+            reject(new Error('消息接收超时'));
+          }, 30000);
+        };
         
         ws.onmessage = (event) => {
           try {
+            resetMessageTimeout();
             const response = JSON.parse(event.data);
             console.log('Received message:', response);
             
@@ -101,20 +130,22 @@ class XfyunService {
             
             if (status === 2) {
               console.log('Chat completed:', responseText);
+              clearTimeout(messageTimeout);
               ws.close();
               resolve(responseText);
             }
           } catch (error) {
             console.error('处理消息失败:', error);
+            clearTimeout(messageTimeout);
             ws.close();
-            reject(error);
+            reject(new Error('处理消息失败'));
           }
         };
         
         const data = {
           header: {
             app_id: this.appid,
-            uid: '12345'
+            uid: 'user_' + Date.now()
           },
           parameter: {
             chat: {
@@ -125,12 +156,16 @@ class XfyunService {
           },
           payload: {
             message: {
-              text: messages
+              text: messages.map(msg => ({
+                role: msg.role,
+                content: msg.content
+              }))
             }
           }
         };
         
         console.log('Sending data:', data);
+        resetMessageTimeout();
         ws.send(JSON.stringify(data));
       });
     } catch (error) {
@@ -147,7 +182,7 @@ class XfyunService {
 文本：${text}
 情绪：`;
       
-      const response = await this.chat([{ role: 'user', content: prompt }]);
+      const response = await this.sendMessage(prompt);
       const emotion = response.toLowerCase().trim();
       
       console.log('Emotion analysis result:', emotion);

@@ -1,12 +1,13 @@
-import xfyun from '@/services/xfyun';
 import weather from '@/services/weather';
+import chat from '@/services/chat';
 
 const state = {
   messages: [],
   isTyping: false,
   currentEmotion: 'neutral',
   weatherInfo: null,
-  soundEnabled: true
+  soundEnabled: true,
+  lastWeatherQuery: null
 };
 
 const getters = {
@@ -14,7 +15,8 @@ const getters = {
   getIsTyping: state => state.isTyping,
   getCurrentEmotion: state => state.currentEmotion,
   getWeatherInfo: state => state.weatherInfo,
-  getSoundEnabled: state => state.soundEnabled
+  getSoundEnabled: state => state.soundEnabled,
+  getLastWeatherQuery: state => state.lastWeatherQuery
 };
 
 const mutations = {
@@ -33,6 +35,12 @@ const mutations = {
   },
   SET_WEATHER_INFO(state, info) {
     state.weatherInfo = info;
+    if (info) {
+      state.lastWeatherQuery = {
+        cityName: info.cityName,
+        timestamp: Date.now()
+      };
+    }
   },
   TOGGLE_SOUND(state) {
     state.soundEnabled = !state.soundEnabled;
@@ -55,41 +63,27 @@ const actions = {
 
     try {
       // 分析情绪
-      const emotion = await xfyun.analyzeEmotion(text);
+      const emotion = await chat.analyzeEmotion(text);
       commit('SET_EMOTION', emotion);
 
-      // 检查是否是天气相关问题
-      const weatherKeywords = ['天气', '下雨', '温度', '气温', '热', '冷'];
-      const isWeatherQuestion = weatherKeywords.some(keyword => text.includes(keyword));
+      // 生成回复
+      const response = await chat.generateResponse(text, emotion);
 
-      let response;
-      let weatherInfo = null;
-
-      if (isWeatherQuestion) {
-        // 获取天气信息
-        weatherInfo = await weather.getNowWeather();
-        const weatherDescription = weather.generateWeatherDescription(weatherInfo);
-        response = weatherDescription;
-      } else {
-        // 使用讯飞服务获取回复
-        response = await xfyun.chat([
-          { role: 'system', content: '你是一个可爱的AI助手糖球，性格活泼开朗，说话方式可爱温暖。你会用emoji表情，会关心用户的情绪状态。' },
-          { role: 'user', content: text }
-        ]);
+      // 如果是天气查询，更新天气信息
+      if (response.type === 'weather' && response.data) {
+        commit('SET_WEATHER_INFO', response.data);
       }
 
       // 添加助手回复
       commit('ADD_MESSAGE', {
         type: 'assistant',
-        text: response,
-        weather: weatherInfo,
-        actions: generateActions(text, emotion)
+        ...response
       });
 
     } catch (error) {
       console.error('发送消息失败:', error);
       commit('ADD_MESSAGE', {
-        type: 'assistant',
+        type: 'error',
         text: '抱歉，我现在有点累了，待会再聊吧~ 😴'
       });
     } finally {
@@ -97,34 +91,33 @@ const actions = {
     }
   },
 
+  async initializeWeather({ commit }) {
+    try {
+      console.log('初始化天气信息');
+      const weatherData = await weather.getLocationWeather();
+      if (weatherData) {
+        commit('SET_WEATHER_INFO', weatherData);
+        // 添加欢迎消息和天气信息
+        commit('ADD_MESSAGE', {
+          type: 'assistant',
+          text: `欢迎回来！让我告诉你${weatherData.cityName}的天气情况~`,
+        });
+        commit('ADD_MESSAGE', {
+          type: 'weather',
+          text: weather.generateWeatherDescription(weatherData),
+          data: weatherData
+        });
+      }
+    } catch (error) {
+      console.error('初始化天气失败:', error);
+    }
+  },
+
   clearChat({ commit }) {
     commit('CLEAR_MESSAGES');
+    commit('SET_WEATHER_INFO', null);
   }
 };
-
-// 根据用户输入和情绪生成互动动作
-function generateActions(text, emotion) {
-  const actions = [];
-
-  // 根据情绪添加安抚动作
-  if (emotion === 'sad' || emotion === 'worried') {
-    actions.push({ type: 'sound', sound: 'purr' });
-    actions.push({ type: 'animation', name: 'bounce' });
-  }
-
-  // 根据关键词添加特定动作
-  if (text.includes('跳舞')) {
-    actions.push({ type: 'animation', name: 'bounce' });
-  }
-  if (text.includes('音乐') || text.includes('听歌')) {
-    actions.push({ type: 'sound', sound: 'music' });
-  }
-  if (text.includes('下雨')) {
-    actions.push({ type: 'sound', sound: 'rain' });
-  }
-
-  return actions.length > 0 ? actions : null;
-}
 
 export default {
   namespaced: true,

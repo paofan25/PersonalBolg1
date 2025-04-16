@@ -1,171 +1,172 @@
 <template>
-  <div class="login">
-    <div class="login-container sweet-card">
-      <h1 class="login-title gradient-text">欢迎回来</h1>
+  <div class="login-container">
+    <el-card class="login-card">
+      <template #header>
+        <h2 class="login-title">登录</h2>
+      </template>
       
-      <form class="login-form" @submit.prevent="handleLogin">
-        <div class="form-group">
-          <label for="email">邮箱</label>
-          <input 
-            type="email" 
-            id="email" 
-            v-model="email" 
-            placeholder="请输入您的邮箱"
-            required
-            class="form-control"
-          />
-        </div>
+      <el-form 
+        ref="formRef"
+        :model="loginForm"
+        :rules="rules"
+        label-position="top"
+        @submit.prevent="handleLogin"
+      >
+        <el-form-item label="用户名" prop="username">
+          <el-input 
+            v-model="loginForm.username"
+            placeholder="请输入用户名"
+          >
+            <template #prefix>
+              <el-icon><User /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
         
-        <div class="form-group">
-          <label for="password">密码</label>
-          <input 
-            type="password" 
-            id="password" 
-            v-model="password" 
+        <el-form-item label="密码" prop="password">
+          <el-input 
+            v-model="loginForm.password"
+            type="password"
             placeholder="请输入密码"
-            required
-            class="form-control"
-          />
-        </div>
+            show-password
+          >
+            <template #prefix>
+              <el-icon><Lock /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
         
-        <div class="form-actions">
-          <div class="remember-me">
-            <input type="checkbox" id="remember" v-model="rememberMe" />
-            <label for="remember">记住我</label>
-          </div>
-          <a href="#" class="forgot-password">忘记密码?</a>
-        </div>
+        <el-form-item>
+          <el-checkbox v-model="loginForm.remember">记住我</el-checkbox>
+        </el-form-item>
         
-        <button type="submit" class="sweet-btn login-btn" :disabled="isLoading">
-          {{ isLoading ? '登录中...' : '登录' }}
-        </button>
-      </form>
+        <el-form-item>
+          <el-button 
+            type="primary" 
+            native-type="submit"
+            :loading="loading"
+            class="login-button"
+          >
+            登录
+          </el-button>
+        </el-form-item>
+      </el-form>
       
-      <div class="register-link">
-        还没有账号? <router-link to="/register">立即注册</router-link>
+      <div class="login-links">
+        <router-link to="/forgot-password">忘记密码？</router-link>
+        <router-link to="/register">注册新账号</router-link>
       </div>
-    </div>
+    </el-card>
   </div>
 </template>
 
 <script>
+import { ref, computed } from 'vue'
+import { useStore } from 'vuex'
+import { useRouter } from 'vue-router'
+import { User, Lock } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+
 export default {
   name: 'LoginView',
-  data() {
-    return {
-      email: '',
-      password: '',
-      rememberMe: false,
-      isLoading: false
-    }
+  components: {
+    User,
+    Lock
   },
-  methods: {
-    handleLogin() {
-      this.isLoading = true;
+  setup() {
+    const store = useStore()
+    const router = useRouter()
+    const formRef = ref(null)
+    
+    const loginForm = ref({
+      username: '',
+      password: '',
+      remember: false
+    })
+    
+    const loading = computed(() => store.state.auth.loading)
+    const error = computed(() => store.state.auth.error)
+    
+    const rules = {
+      username: [
+        { required: true, message: '请输入用户名', trigger: 'blur' },
+        { min: 3, message: '用户名至少3个字符', trigger: 'blur' }
+      ],
+      password: [
+        { required: true, message: '请输入密码', trigger: 'blur' },
+        { min: 6, message: '密码至少6个字符', trigger: 'blur' }
+      ]
+    }
+    
+    const handleLogin = async () => {
+      if (!formRef.value) return
       
-      // 模拟登录请求
-      setTimeout(() => {
-        this.isLoading = false;
-        
-        // 重定向到首页
-        this.$router.push('/');
-      }, 1500);
+      try {
+        await formRef.value.validate()
+        await store.dispatch('auth/login', loginForm.value)
+        ElMessage.success('登录成功')
+        router.push('/')
+      } catch (error) {
+        console.error('登录失败:', error)
+        ElMessage.error(error.message || '登录失败，请重试')
+      }
+    }
+    
+    return {
+      formRef,
+      loginForm,
+      loading,
+      error,
+      rules,
+      handleLogin
     }
   }
 }
 </script>
 
 <style scoped>
-.login {
-  min-height: 70vh;
+.login-container {
+  min-height: 100vh;
   display: flex;
-  justify-content: center;
   align-items: center;
-  padding: 20px;
+  justify-content: center;
+  background-color: var(--background-color);
 }
 
-.login-container {
-  max-width: 450px;
+.login-card {
   width: 100%;
-  padding: 40px;
+  max-width: 400px;
+  margin: 20px;
 }
 
 .login-title {
-  font-size: 2rem;
   text-align: center;
-  margin-bottom: 30px;
+  color: var(--text-color);
+  margin: 0;
 }
 
-.login-form {
-  margin-bottom: 20px;
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-}
-
-.form-control {
+.login-button {
   width: 100%;
-  padding: 12px 15px;
-  border: 2px solid var(--primary-purple);
-  border-radius: var(--border-radius);
-  font-family: var(--font-primary);
-  transition: border-color 0.3s ease;
 }
 
-.form-control:focus {
-  outline: none;
-  border-color: var(--primary-pink);
-}
-
-.form-actions {
+.login-links {
+  margin-top: 20px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 25px;
-  font-size: 0.9rem;
+  font-size: 14px;
 }
 
-.remember-me {
+.login-links a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.login-links a:hover {
+  text-decoration: underline;
+}
+
+:deep(.el-input__prefix) {
   display: flex;
   align-items: center;
-  gap: 5px;
-}
-
-.forgot-password {
-  color: var(--primary-pink);
-  text-decoration: none;
-}
-
-.forgot-password:hover {
-  text-decoration: underline;
-}
-
-.login-btn {
-  width: 100%;
-  padding: 12px;
-  font-size: 1.1rem;
-}
-
-.register-link {
-  text-align: center;
-  margin-top: 20px;
-  color: var(--text-secondary);
-}
-
-.register-link a {
-  color: var(--primary-pink);
-  text-decoration: none;
-  font-weight: bold;
-}
-
-.register-link a:hover {
-  text-decoration: underline;
 }
 </style>
